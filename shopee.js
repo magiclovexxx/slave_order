@@ -4,14 +4,19 @@ const shopeeApi = require('./src/shopeeApi.js')
 const actionsShopee = require('./src/actions.js')
 const axios = require('axios').default;
 const moment = require('moment')
-
+var FormData = require('form-data');
 const puppeteer = require('puppeteer-extra')
 const StealthPlugin = require('puppeteer-extra-plugin-stealth')
-puppeteer.use(StealthPlugin())
+
 const randomUseragent = require('random-useragent');
 var shell = require('shelljs');
 const { preparePageForTests } = require('./src/bypass');
 var ip_address = require("ip");
+const preloadFile = fs.readFileSync('./preload.js', 'utf8');
+// ["chrome.runtime", "navigator.languages"].forEach(a =>
+//     StealthPlugin.enabledEvasions.delete(a)
+// )
+puppeteer.use(StealthPlugin())
 
 slavenumber = process.env.SLAVE
 account_check = process.env.ACCOUNT_CHECK
@@ -92,7 +97,6 @@ login_google = async (page, accounts) => {
 
 }
 
-
 add_address = async (page, product, cookies) => {
     try {
 
@@ -140,7 +144,7 @@ add_address = async (page, product, cookies) => {
         await page.waitForTimeout(3000)
         await page.goto(address_account_url)
         await page.waitForTimeout(3000)
-        let check_address  = await page.$x("//button[contains(text(), 'Delete')]");
+        let check_address = await page.$x("//button[contains(text(), 'Delete')]");
 
         console.log("Số địa chỉ đang có: " + check_address.length)
         if (check_address.length) {
@@ -149,66 +153,120 @@ add_address = async (page, product, cookies) => {
             for (let i = 0; i < check_address.length; i++) {
                 await check_address[i].click();
                 await page.waitForTimeout(1000)
-                let check_address2  = await page.$x('//*[aria-label="Delete Address?"]*button[contains(text(), "Delete")]');
-                
-                if(check_address2.length){
-                    await check_address2[0].click();
+                let check_address2 = await page.$x('//button[contains(text(), "Delete")]')
+
+                if (check_address2.length == 2) {
+                    await check_address2[1].click();
                 }
-                
-                
             }
         }
-        await page.waitForTimeout(9999000)
+
         console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ ");
         let domain = product.shopee_country_url.split("/")
+        let cookie1
         domain = domain[domain.length - 1]
 
         const csrftoken = cookies.filter(x => x.domain.includes(domain) && x.name == 'csrftoken')[0].value;
 
-        // request = await apiRequestContext.post(add_address_url, {
-        //     multipart: {
-        //         'name': 'Toan Tran',
-        //         'phone': '60168961369',
-        //         'country': 'MY',
-        //         'state': 'Kuala Lumpur',
-        //         'city': 'Kuala Lumpur',
-        //         'district': 'Bandar Kuala Lumpur',
-        //         'address': '35 Jalan Perpaduan Desa Lawan Kuda 31600 Gopeng Perak Malaysia',
-        //         'place': 'DO_NOT_CHANGE__I_AM_MAGIC',
-        //         'label': 'label_address_label_work',
-        //         'label_id': '1',
-        //         'add_only': false,
-        //     },
-        //     headers: {
-        //         "referer": product.shopee_country_url + `/user/account/address`,
-        //         "x-csrftoken": csrftoken
-        //     }
-        // });
-        // if (request.status() != 200) {
-        //     console.log('Lỗi không thể thêm địa chỉ', request.status());
-        //     return;
-        // }
-        // body = await request.json();
+        cookies.forEach((row, index) => {
+            cookie1 = cookie1 + row.name + "=" + row.value
+            if (index != (cookies.length - 1)) {
+                cookie1 = cookie1 + "; "
+            }
+        })
+
+
+        address_data = {
+            'name': 'Toan Tran',
+            'phone': '60168961369',
+            'country': 'MY',
+            'state': 'Kuala Lumpur',
+            'city': 'Kuala Lumpur',
+            'district': 'Bandar Kuala Lumpur',
+            'town': "",
+            'zipcode': "",
+            'address': '35 Jalan Perpaduan Desa Lawan Kuda 31600 Gopeng Perak Malaysia',
+            'place': 'DO_NOT_CHANGE__I_AM_MAGIC',
+            'label': 'label_address_label_work',
+            'label_id': '1',
+            'add_only': false,
+        }
+
+
+        var data = new FormData();
+        data.append('name', address_data.name);
+        data.append('phone', address_data.phone);
+        data.append('icno', '');
+        data.append('country', address_data.country);
+        data.append('state', address_data.state);
+        data.append('city', address_data.city);
+        data.append('district', address_data.district);
+        data.append('town', address_data.town);
+        data.append('address', address_data.address);
+        data.append('zipcode', address_data.zipcode);
+        data.append('set_default', '1');
+        data.append('label', 'label_address_label_work');
+        data.append('label_id', '1');
+        data.append('address_instruction', '');
+        data.append('place', 'DO_NOT_CHANGE__I_AM_MAGIC');
+        data.append('add_only', 'true');
+
+        var config = {
+            method: 'post',
+            url: add_address_url,
+            headers: {
+                'authority': 'shopee.vn',
+                'accept': '*/*',
+                'accept-language': 'vi-VN,vi;q=0.9,en-US;q=0.8,en;q=0.7',
+                'cache-control': 'no-cache',
+                'cookie': cookie1,
+                'origin': 'https://shopee.vn',
+                'pragma': 'no-cache',
+                'sec-ch-ua': '" Not A;Brand";v="99", "Chromium";v="102", "Google Chrome";v="102"',
+                'sec-ch-ua-mobile': '?0',
+                'sec-ch-ua-platform': '"Windows"',
+                'sec-fetch-dest': 'empty',
+                'sec-fetch-mode': 'cors',
+                'sec-fetch-site': 'same-origin',
+                'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/102.0.5005.63 Safari/537.36',
+                'x-api-source': 'pc',
+                'x-requested-with': 'XMLHttpRequest',
+                "referer": product.shopee_country_url + `/user/account/address`,
+                "x-csrftoken": csrftoken,
+                'x-shopee-language': 'en',
+                ...data.getHeaders()
+            },
+            data: data
+        };
         body = {}
+        await axios(config)
+            .then(function (response) {
+             //   console.log(JSON.stringify(response.data));
+                body = response.data
+            })
+            .catch(function (error) {
+                console.log(error);
+            })
+
 
         if (body.addressid) {
             console.log(JSON.stringify(body));
             let address_id = body.addressid
             console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ thành công ");
 
-            // Set địa chỉ defautl
-            let default_address_url = product.shopee_country_url + "/api/v0/addresses/" + address_id + "/set_default/"
-            console.log(default_address_url)
-            let set_defaut = await apiRequestContext.post(default_address_url, {
-                headers: {
-                    "referer": product.shopee_country_url + `/user/account/address`,
-                    "x-csrftoken": csrftoken
-                }
-            })
-            set_defaut = await set_defaut.json()
-            if (set_defaut.success) {
-                console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ mặc đỊnh thành công ");
-            }
+            // // Set địa chỉ defautl
+            // let default_address_url = product.shopee_country_url + "/api/v0/addresses/" + address_id + "/set_default/"
+            // console.log(default_address_url)
+            // let set_defaut = await apiRequestContext.post(default_address_url, {
+            //     headers: {
+            //         "referer": product.shopee_country_url + `/user/account/address`,
+            //         "x-csrftoken": csrftoken
+            //     }
+            // })
+            // set_defaut = await set_defaut.json()
+            // if (set_defaut.success) {
+            //     console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ mặc đỊnh thành công ");
+            // }
 
             return 1
         } else {
@@ -251,8 +309,13 @@ action_order = async (page, product) => {
 
         products_1.forEach(async e => {
             console.log(e)
-            await page.locator('text=' + e + 'Va >> label div').click();
-            await page.waitForTimeout(1000)
+            let check_1 = await page.$$('[title="' + e + '"]');
+            if (check_1.length) {
+                await page.evaluate((a) => {
+                    document.querySelectorAll('[title="' + a + '"]')[1].parentElement.parentElement.parentElement.parentElement.childNodes[0].children[0].click()
+                }, e)
+                await page.waitForTimeout(1000)
+            }
 
         })
 
@@ -260,12 +323,15 @@ action_order = async (page, product) => {
         // await page.locator('text=Abaya Muslim Elegant Dress Plain Women Fashion Jubah Long Sleeve Belted DressesVa >> label div').click();
 
         await page.waitForTimeout(3000)
-        page.locator('button:has-text("check out")').click()
+        check_1 = await page.$$('.shopee-button-solid--primary')
+        if (check_1.length) {
+            await check_1[0].click()
+        }
         await page.waitForTimeout(8600)
 
-        let check_select_item = await page.$$('text=You have not selected any items for checkout')
+        let check_select_item = await page.$$('.shopee-alert-popup__message')
         if (check_select_item.length) {
-            await page.locator('text=You have not selected any items for checkout').click();
+            //  await page.locator('text=You have not selected any items for checkout').click();
             update_error_data = {}
             update_error_data.order_id = product.id
             update_error_data.username = product.username
@@ -279,11 +345,14 @@ action_order = async (page, product) => {
         }
 
 
-        let check_btn_cod = await page.$$('text=Cash on Delivery')
+        let check_btn_cod = await page.$$('[aria-label="Cash on Delivery"]')
         if (check_btn_cod.length) {
-            page.locator('text=Cash on Delivery').click()
+            await check_btn_cod.click()
             await page.waitForTimeout(2000)
-            await page.locator('text=Place Order').click();
+            let checkout = await page.$$('.stardust-button--primary')
+            if (checkout.length) {
+                await checkout[0].click()
+            }
             await page.waitForTimeout(2000)
         } else {
 
@@ -349,13 +418,13 @@ action_add_cart = async (page, product) => {
         if (check_variation == 1) {
             // Chọn màu
             if (product_info.color) {
-                await page.locator('[aria-label=' + product_info.color + ']').click();
+                await page.click('[aria-label=' + product_info.color + ']');
                 await page.waitForTimeout(5000)
                 console.log(moment().format("hh:mm:ss") + " Chọn Màu OK ");
             }
 
             if (product_info.size) {
-                await page.locator('[aria-label=' + product_info.size + ']').click();
+                await page.click('[aria-label=' + product_info.size + ']');
                 await page.waitForTimeout(5000)
                 console.log(moment().format("hh:mm:ss") + " Chọn Size OK ");
             }
@@ -372,15 +441,13 @@ action_add_cart = async (page, product) => {
         }
 
         // chọn số lượng
-        await page.locator('input[role="spinbutton"]').click();
-        await page.locator('input[role="spinbutton"]').fill('2');
+    //    await page.click('input[role="spinbutton"]');
+        await page.type('input[role="spinbutton"]', product_info.quantity)
 
-        let check_btn_add_dard = await page.$$('button:has-text("add to cart")')
+        let check_btn_add_dard = await page.$$('.btn-tinted')
 
         if (check_btn_add_dard.length > 1) {
-            await page.locator('button:has-text("add to cart")').first().click();
-        } else {
-            await page.locator('button:has-text("add to cart")').click();
+            await check_btn_add_dard[0].click();
         }
 
         return 1
@@ -404,16 +471,18 @@ remove_cart = async (page, product) => {
 
     try {
         await page.goto(product.shopee_country_url + "/cart")
-        await page.waitForTimeout(2000)
+        await page.waitForSelector('.cart-page-logo__page-name')
+        await page.waitForTimeout(5000)
 
-        let check_product_cart = await page.$$('text=Delete')
+        let check_product_cart = await page.$x("//button[contains(text(), 'Delete')]");
 
         console.log("Số đơn hàng cần xoá: " + check_product_cart.length)
 
-        for (let i = 0; i < check_product_cart.length; i++) {
-            await page.locator('text=Delete').first().click();
-            await page.waitForTimeout(2000)
-
+        if (check_product_cart.length > 0) {
+            for (let i = 0; i < (check_product_cart.length-1); i++) {
+                await check_product_cart[i].click();
+                await page.waitForTimeout(2000)
+            }
         }
 
     } catch (error) {
@@ -459,7 +528,7 @@ login_shopee = async (page, accounts, browser) => {
 
             let page1 = (await browser.pages())[1];
             await page1.waitForTimeout(3000)
-        //    await page1.waitForSelector('[autocomplete="username"]')
+            //    await page1.waitForSelector('[autocomplete="username"]')
             await page1.click('[autocomplete="username"]')
             await page1.waitForTimeout(1000)
             await page1.type('[autocomplete="username"]', accounts[0], { delay: 100 })    // Nhập user 
@@ -469,14 +538,14 @@ login_shopee = async (page, accounts, browser) => {
             await page1.type('[autocomplete="current-password"]', accounts[1], { delay: 100 })    // Nhập comment 
             await page1.waitForTimeout(2000)
             let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
-            if(click_next.length>0){
-               await click_next[1].click()
+            if (click_next.length > 0) {
+                await click_next[1].click()
             }
         }
 
         await page.waitForTimeout(5000)
         check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
-       
+
         if (check_login.length == 0) {
             console.log(" ---- check login thành công ----" + check_login.length)
             return 1
@@ -677,6 +746,7 @@ test_browser = async (option) => {
         '--disable-gpu',
         '--no-sandbox',
         '--lang=en-US',
+        '--disable-infobars',
         '--disable-setuid-sandbox',
         '--disable-dev-shm-usage',
         '--disable-background-timer-throttling',
@@ -685,6 +755,8 @@ test_browser = async (option) => {
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
+        '--window-position=0,0',
+        '--ignore-certifcate-errors-spki-list',
         //  '--lang=' + user_lang,
         '--disable-reading-from-canvas'
     ]
@@ -723,20 +795,24 @@ gen_browser = async (option) => {
         '--disable-dev-shm-usage',
         '--disable-accelerated-2d-canvas',
         '--no-first-run',
+        '--window-position=0,0',
         '--lang=' + user_lang,
-        '--disable-reading-from-canvas'
+        '--disable-infobars',
+        '--disable-reading-from-canvas',
+        '--ignore-certificate-errors',
+        '--ignore-certifcate-errors-spki-list',
     ]
 
     // if(mode==="DEV"){
     //     network = ""
     // }
 
-    if (network == "proxy") {
+    if (network == "proxy" && proxy1.length) {
         //'--proxy-server=103.90.230.170:9043'
 
         let proxy_for_slave = "--proxy-server=" + proxy1.proxy_ip + ":" + proxy1.proxy_port
         param.push(proxy_for_slave)
-        param.push('--ignore-certificate-errors')
+      
     }
 
     const browser = await puppeteer.launch({
@@ -744,6 +820,7 @@ gen_browser = async (option) => {
         headless: headless_mode,
         devtools: false,
         userDataDir: `${profile_dir}`,
+        ignoreDefaultArgs: ['--enable-automation'],
         args: param
     });
 
@@ -754,6 +831,9 @@ gen_page = async (browser, option) => {
 
     const page = (await browser.pages())[0];
     //const page = await browser.newPage()
+    await page.evaluateOnNewDocument(()=>{
+        delete navigator.__proto__.webdriver
+    })
     await preparePageForTests(page);
 
     let user_agent1 = option.user_agent
@@ -777,7 +857,7 @@ gen_page = async (browser, option) => {
     //     network = ""
     // }
 
-    if (network == "proxy") {
+    if (network == "proxy"  && proxy1.length) {
 
         let proxy_pass
         try {
@@ -790,19 +870,19 @@ gen_page = async (browser, option) => {
         await page.authenticate({ username: proxy1.proxy_username, password: proxy_pass });
     }
 
-    try {
-        if (cookie1.length) {
-            let cookie111 = JSON.parse(cookie1)
-            console.log(cookie111.length)
-            // cookie111.forEach(async (item) => {
-            //     await page.setCookie(item);
-            // })
-            await page.setCookie(...cookie111);
-            console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
-        }
-    } catch (e) {
-        console.log(" ---- Lỗi set coookie ----")
-    }
+    // try {
+    //     if (cookie1.length) {
+    //         let cookie111 = JSON.parse(cookie1)
+    //         console.log(cookie111.length)
+    //         // cookie111.forEach(async (item) => {
+    //         //     await page.setCookie(item);
+    //         // })
+    //         await page.setCookie(...cookie111);
+    //         console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
+    //     }
+    // } catch (e) {
+    //     console.log(" ---- Lỗi set coookie ----")
+    // }
 
     return page
 }
@@ -973,7 +1053,7 @@ runAllTime = async () => {
         }
 
         let profileChrome = profileDir + subAccount[0]
-
+        proxy = {}
         let option1 = {
             user_agent: user_agent,
             proxy: proxy,
@@ -988,19 +1068,22 @@ runAllTime = async () => {
         let page = await gen_page(browser, option1)
 
 
-        // try {
-        //     let cookie1 = acc.cookie
+        try {
+            let cookie2 = acc.cookie
 
-        //     if (cookie1.length) {
-        //         cookie1 = JSON.parse(cookie1)
-        //         console.log(cookie1.length)
-        //         await page.setCookie([...cookie1])
-        //         console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
-        //     }
-        // } catch (e) {
-        //     console.log(" ---- Lỗi set coookie ----")
-        //     console.log(e)
-        // }
+            if (cookie2.length) {
+                cookie2 = JSON.parse(cookie2)
+                console.log(cookie2.length)
+                cookie2.forEach(async e => {
+                    await page.setCookie(e)
+                })
+                //await page.setCookie([...cookie2])
+                console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
+            }
+        } catch (e) {
+            console.log(" ---- Lỗi set coookie ----")
+            console.log(e)
+        }
 
         //  await page.waitForTimeout(999999)
 
@@ -1102,14 +1185,19 @@ runAllTime = async () => {
 
                         let check_add_cart
 
+                        await page.waitForSelector(".shopee-searchbar-input")
+                        await page.waitForTimeout(5000)
                         if (o == 0) {
                             console.log("country shopee link: " + shopee_country_url)
                             let shopee_cookie = await page.cookies(shopee_country_url)
                             let data_clone = {}
+                            let cookie1
                             data_clone.clone_id = acc.id
                             data_clone.cookie = shopee_cookie
+                            console.log("cookie clone: " + shopee_cookie.length)
                             await updateCookie(data_clone, 1)
                             await page.waitForTimeout(5000)
+
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
                             if (check_add_address == 0) {
@@ -1120,7 +1208,6 @@ runAllTime = async () => {
                         await page.on('response', async (response) => {
                             let url = response.url()
                             let productInfo1, productInfo2
-
 
                             let checkUrlShop = url.split("shop/get_shop_detail")
 
