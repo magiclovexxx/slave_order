@@ -175,33 +175,34 @@ add_address = async (page, product, cookies) => {
             }
         })
 
+        let address_data = JSON.parse(product.address)
 
-        address_data = {
-            'name': 'Toan Tran',
-            'phone': '60168961369',
-            'country': 'MY',
-            'state': 'Kuala Lumpur',
-            'city': 'Kuala Lumpur',
-            'district': 'Bandar Kuala Lumpur',
-            'town': "",
-            'zipcode': "",
-            'address': '35 Jalan Perpaduan Desa Lawan Kuda 31600 Gopeng Perak Malaysia',
-            'place': 'DO_NOT_CHANGE__I_AM_MAGIC',
-            'label': 'label_address_label_work',
-            'label_id': '1',
-            'add_only': false,
-        }
+        // address_data = {
+        //     'name': 'Toan Tran',
+        //     'phone': '60168961369',
+        //     'country': 'MY',
+        //     'state': 'Kuala Lumpur',
+        //     'city': 'Kuala Lumpur',
+        //     'district': 'Bandar Kuala Lumpur',
+        //     'town': "",
+        //     'zipcode': "",
+        //     'address': '35 Jalan Perpaduan Desa Lawan Kuda 31600 Gopeng Perak Malaysia',
+        //     'place': 'DO_NOT_CHANGE__I_AM_MAGIC',
+        //     'label': 'label_address_label_work',
+        //     'label_id': '1',
+        //     'add_only': false,
+        // }
 
 
         var data = new FormData();
-        data.append('name', address_data.name);
-        data.append('phone', address_data.phone);
+        data.append('name', product.rec_name);
+        data.append('phone', product.rec_phone);
         data.append('icno', '');
         data.append('country', address_data.country);
-        data.append('state', address_data.state);
-        data.append('city', address_data.city);
-        data.append('district', address_data.district);
-        data.append('town', address_data.town);
+        data.append('state', address_data.city);
+        data.append('city', address_data.district);
+        data.append('district', address_data.ward);
+        data.append('town', address_data.barangay);
         data.append('address', address_data.address);
         data.append('zipcode', address_data.zipcode);
         data.append('set_default', '1');
@@ -441,7 +442,7 @@ action_add_cart = async (page, product) => {
         }
 
         // chọn số lượng
-    //    await page.click('input[role="spinbutton"]');
+        await page.click('input[role="spinbutton"]', { clickCount: 2 });
         await page.type('input[role="spinbutton"]', product_info.quantity)
 
         let check_btn_add_dard = await page.$$('.btn-tinted')
@@ -475,11 +476,11 @@ remove_cart = async (page, product) => {
         await page.waitForTimeout(5000)
 
         let check_product_cart = await page.$x("//button[contains(text(), 'Delete')]");
+        let remove_order = check_product_cart.length - 1
+        console.log("Số đơn hàng cần xoá: " + remove_order)
 
-        console.log("Số đơn hàng cần xoá: " + check_product_cart.length)
-
-        if (check_product_cart.length > 0) {
-            for (let i = 0; i < (check_product_cart.length-1); i++) {
+        if (remove_order > 0) {
+            for (let i = 0; i < remove_order; i++) {
                 await check_product_cart[i].click();
                 await page.waitForTimeout(2000)
             }
@@ -807,7 +808,7 @@ gen_browser = async (option) => {
     //     network = ""
     // }
 
-    if (network == "proxy" && proxy1.length) {
+    if (network == "proxy") {
         //'--proxy-server=103.90.230.170:9043'
 
         let proxy_for_slave = "--proxy-server=" + proxy1.proxy_ip + ":" + proxy1.proxy_port
@@ -857,7 +858,7 @@ gen_page = async (browser, option) => {
     //     network = ""
     // }
 
-    if (network == "proxy"  && proxy1.length) {
+    if (network == "proxy") {
 
         let proxy_pass
         try {
@@ -1053,7 +1054,8 @@ runAllTime = async () => {
         }
 
         let profileChrome = profileDir + subAccount[0]
-        proxy = {}
+       // proxy = {}
+      // console.log(proxy)
         let option1 = {
             user_agent: user_agent,
             proxy: proxy,
@@ -1066,14 +1068,15 @@ runAllTime = async () => {
 
         let browser = await gen_browser(option1)
         let page = await gen_page(browser, option1)
-
+        
+      //  await page.emulate(m);
 
         try {
             let cookie2 = acc.cookie
 
             if (cookie2.length) {
                 cookie2 = JSON.parse(cookie2)
-                console.log(cookie2.length)
+            
                 cookie2.forEach(async e => {
                     await page.setCookie(e)
                 })
@@ -1194,7 +1197,7 @@ runAllTime = async () => {
                             let cookie1
                             data_clone.clone_id = acc.id
                             data_clone.cookie = shopee_cookie
-                            console.log("cookie clone: " + shopee_cookie.length)
+                         //   console.log("cookie clone: " + shopee_cookie.length)
                             await updateCookie(data_clone, 1)
                             await page.waitForTimeout(5000)
 
