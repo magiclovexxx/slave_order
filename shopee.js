@@ -835,9 +835,10 @@ gen_browser = async (option) => {
 
     if (network == "proxy") {
         //'--proxy-server=103.90.230.170:9043'
-
-        let proxy_for_slave = "--proxy-server=" + proxy1.proxy_ip + ":" + proxy1.proxy_port
-        param.push(proxy_for_slave)
+        if (proxy1.length) {
+            let proxy_for_slave = "--proxy-server=" + proxy1.proxy_ip + ":" + proxy1.proxy_port
+            param.push(proxy_for_slave)
+        }
 
     }
 
@@ -884,16 +885,17 @@ gen_page = async (browser, option) => {
     // }
 
     if (network == "proxy") {
+        if (proxy1.length) {
+            let proxy_pass
+            try {
+                proxy_pass = proxy1.proxy_password.split("\r")[0]
+            } catch (error) {
+                proxy_pass = proxy1.proxy_password
+            }
 
-        let proxy_pass
-        try {
-            proxy_pass = proxy1.proxy_password.split("\r")[0]
-        } catch (error) {
-            proxy_pass = proxy1.proxy_password
+            console.log(" proxxy ip: " + proxy1.proxy_ip + ":" + proxy1.proxy_port + ":" + proxy1.proxy_username + ":" + proxy_pass)
+            await page.authenticate({ username: proxy1.proxy_username, password: proxy_pass });
         }
-
-        console.log(" proxxy ip: " + proxy1.proxy_ip + ":" + proxy1.proxy_port + ":" + proxy1.proxy_username + ":" + proxy_pass)
-        await page.authenticate({ username: proxy1.proxy_username, password: proxy_pass });
     }
 
     // try {
