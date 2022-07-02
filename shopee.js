@@ -166,8 +166,10 @@ add_address = async (page, product, cookies) => {
         var data = new FormData();
         let phone_country = ""
         let zipcode = ""
-        data.append('name', product.rec_name);
 
+       
+
+        data.append('name', product.rec_name);
         data.append('icno', '');
         data.append('country', address_data.country);
         data.append('state', address_data.city);
@@ -175,19 +177,22 @@ add_address = async (page, product, cookies) => {
         data.append('district', address_data.ward);
         data.append('town', address_data.barangay);
         data.append('address', address_data.address);
+        
         if (address_data.zipcode) {
-            data.append('zipcode', address_data.zipcode);
-        } else {
-
-            if (address_data.country == "PH") {
-                zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
-                phone_country = "63"
-            }
-
+            let z = address_data.zipcode
+            data.append('zipcode', z);
         }
 
+        if (address_data.country == "PH") {
+            zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
+            phone_country = "63"
+        }
+
+        let ph = phone_country + product.rec_phone
+        console.log("Phone: " + ph)
+
         data.append('zipcode', zipcode);
-        data.append('phone', phone_country + product.rec_phone);
+        data.append('phone', ph);
         data.append('set_default', '1');
 
         data.append('address_instruction', '');
@@ -302,7 +307,7 @@ add_address = async (page, product, cookies) => {
             update_error_data.order_id = product.id
             update_error_data.username = product.username
             update_error_data.slave = product.slave
-            update_error_data.error_code = 2001
+            update_error_data.error_code = 2004
             update_error_data.product_link = product.product_link
             update_error_data.error_log = "Thông tin địa chỉ hoặc số điện thoại không đúng, vui lòng kiểm tra lại"
             console.log(moment().format("hh:mm:ss") + " -- Địa chỉ hoặc số điện thoại không đúng ");
@@ -379,7 +384,7 @@ action_order = async (page, product) => {
             console.log(moment().format("hh:mm:ss") + " -- Add voucher sản phẩm ");
 
             let fee_ship_1 = 0
-            const fee_ships = await page.evaluate((x) => {
+            let fee_ships = await page.evaluate((x) => {
                 let fee_ship_2
                 document.querySelectorAll('div').forEach(e => {
                     if (e.textContent == 'Overseas Shipping') {
@@ -391,15 +396,33 @@ action_order = async (page, product) => {
                 return fee_ship_2
             })
 
-            if (product.country == "PH") {
-                let check_fee = fee_ships.split("₱")
-                if (check_fee.length > 1) {
-                    fee_ship_1 = parseInt(check_fee[1])
-                }
+            console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ships);
+            let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
+            
+            if(check_not_support_shiping.length){
+                update_error_data = {}
+                update_error_data.order_id = product.id
+                update_error_data.username = product.username
+                update_error_data.slave = product.slave
+                update_error_data.error_code = 2003
+                update_error_data.product_link = product.product_link
+                update_error_data.error_log = "Lỗi địa chỉ không hỗ trợ ship"
+                console.log(moment().format("hh:mm:ss") + " -- Lỗi địa chỉ không hỗ trợ ship ");
+                await update_error(update_error_data, 4)
+                return 0
+            }
 
+           // await page.waitForTimeout(999999)
+            if (product.country == "PH") {
+                if(fee_ships.length > 1){
+                    let check_fee = fee_ships.split("₱")
+                    if (check_fee.length > 1) {
+                        fee_ship_1 = parseInt(check_fee[1])
+                    }
+                }               
             }
             // const link = await fee_ships[i].$eval('a', a => a.getAttribute('href'));
-            console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ship_1);
+        //    console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ship_1);
 
             if (fee_ship_1 == 0) {
                 //  await page.locator('text=You have not selected any items for checkout').click();
@@ -424,12 +447,11 @@ action_order = async (page, product) => {
                 for (let y = 0; y < voucher_1.length; y++) {
                     x = voucher_1[y]
                     let p = parseInt(x.price)
-                    console.log(p + " -- " + x.code + " fee: " + fee_ship_1)
+                    
                     if (p == fee_ship_1) {
                         console.log("--- Nhập code --")
-                        await page.type('[placeholder="Shop voucher code"]', x.code)
-                       
-                        
+                        console.log(p + " -- " + x.code + " fee: " + fee_ship_1)
+                        await page.type('[placeholder="Shop voucher code"]', x.code)                       
                         break
                     }
                 }
@@ -438,7 +460,7 @@ action_order = async (page, product) => {
                 if (apply.length) {
                     await apply[0].click()
                     await page.waitForTimeout(3000)
-                    let check_voucher_expỉed = await page.$$('.input-with-validator__error-message')
+                    let check_voucher_expỉed = await page.$x("//div[contains(text(), 'Sorry, this voucher has expired.')]")
                         if (check_voucher_expỉed.length) {
                             update_error_data = {}
                             update_error_data.order_id = product.id
@@ -446,8 +468,22 @@ action_order = async (page, product) => {
                             update_error_data.slave = product.slave
                             update_error_data.error_code = 2001
                             update_error_data.product_link = product.product_link
-                            update_error_data.error_log = "Lỗi voucher " + x.code + "hết hạn"
-                            console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + "hết hạn");
+                            update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn"
+                            console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn");
+                            await update_error(update_error_data, 4)
+                            return 0
+                        }
+
+                        check_voucher_expỉed = await page.$x("//div[contains(text(), 'You have redeemed this voucher before.')]")
+                        if (check_voucher_expỉed.length) {
+                            update_error_data = {}
+                            update_error_data.order_id = product.id
+                            update_error_data.username = product.username
+                            update_error_data.slave = product.slave
+                            update_error_data.error_code = 2001
+                            update_error_data.product_link = product.product_link
+                            update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng"
+                            console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng");
                             await update_error(update_error_data, 4)
                             return 0
                         }
@@ -537,13 +573,13 @@ action_add_cart = async (page, product) => {
             if (product_info.color) {
                 await page.click('[aria-label="' + product_info.color + '"]');
                 await page.waitForTimeout(5000)
-                console.log(moment().format("hh:mm:ss") + " Chọn Màu OK ");
+                console.log(moment().format("hh:mm:ss") + " Chọn Màu OK :" + product_info.color);
             }
 
             if (product_info.size) {
                 await page.click('[aria-label="' + product_info.size + '"]');
                 await page.waitForTimeout(5000)
-                console.log(moment().format("hh:mm:ss") + " Chọn Size OK ");
+                console.log(moment().format("hh:mm:ss") + " Chọn Size OK: " + product_info.size);
             }
         } else {
             update_error_data = {}
@@ -560,6 +596,7 @@ action_add_cart = async (page, product) => {
         // chọn số lượng
         await page.click('input[role="spinbutton"]', { clickCount: 2 });
         await page.type('input[role="spinbutton"]', product_info.quantity)
+        console.log(moment().format("hh:mm:ss") + " Chọn Số lượng OK: " + product_info.quantity);
 
         let check_btn_add_dard = await page.$$('.btn-tinted')
 
@@ -603,8 +640,17 @@ remove_cart = async (page, product) => {
         }
 
     } catch (error) {
+        update_error_data = {}
+        update_error_data.order_id = product.id
+        update_error_data.username = product.username
+        update_error_data.slave = product.slave
+        update_error_data.product_link = product.product_link
+        update_error_data.error_message = error.message
+        update_error_data.error_code = 1008
+        update_error_data.error_log = "Lỗi hệ thống khi xoá sản phẩm trong giỏ hàng"
+        await update_error(update_error_data, 4)
         console.log(error)
-        return 0
+        return 0        
     }
     return 1
 
@@ -1192,7 +1238,7 @@ runAllTime = async () => {
         try {
             let cookie2 = acc.cookie
 
-            if (cookie2.length) {
+            if (cookie2) {
                 cookie2 = JSON.parse(cookie2)
 
                 cookie2.forEach(async e => {
@@ -1321,6 +1367,7 @@ runAllTime = async () => {
                             // await page.waitForTimeout(999999)
                             if (check_add_address == 0) {
                                 shell.exec('pm2 restart all');
+                                return 
                             }
                         }
 
@@ -1407,6 +1454,7 @@ runAllTime = async () => {
                                 console.log("product link: " + productForUser.product_link)
                                 console.log("product name: " + productForUser.product_name)
                                 console.log("product id: " + productForUser.product_id)
+                                console.log("ORDER id: " + productForUser.id)
 
                                 products_name.push(productForUser.product_name)
 
@@ -1466,8 +1514,7 @@ runAllTime = async () => {
                             await page.waitForTimeout(1000);
 
                         }
-
-                        console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác san pham: " + o)
+                    
                     }
 
                     product_order_info.products_name = products_name
@@ -1479,12 +1526,12 @@ runAllTime = async () => {
                     //await page.waitForTimeout(999999);
                     //  check_2 = 1
                     if (check_2 == 1) {
-                        if (check_order_complete == true) {
+                    //    if (check_order_complete == true) {
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
 
                             product_order_info.action = "order_product"
                             await updatePoint(product_order_info, 3)
-                        }
+                    //    }
 
                     } else {
 
