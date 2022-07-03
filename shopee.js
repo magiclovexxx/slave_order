@@ -365,7 +365,9 @@ action_order = async (page, product) => {
         if (check_1.length) {
             await check_1[0].click()
         }
-        await page.waitForTimeout(8600)
+        //await page.waitForTimeout(8600)
+        await page.waitForSelector('.shopee-svg-icon.icon-voucher-line')
+        await page.waitForTimeout(5600)
 
         let check_select_item = await page.$$('.shopee-alert-popup__message')
         if (check_select_item.length) {
@@ -381,7 +383,7 @@ action_order = async (page, product) => {
             await update_error(update_error_data, 4)
             return 0
         }
-
+        
         // add voucher
         if (voucher_1.length) {
             console.log(moment().format("hh:mm:ss") + " -- Add voucher sản phẩm ");
@@ -390,8 +392,8 @@ action_order = async (page, product) => {
             let fee_ships = await page.evaluate((x) => {
                 let fee_ship_2
                 document.querySelectorAll('div').forEach(e => {
-                    if (e.textContent == 'Overseas Shipping') {
-                        a = e.parentElement.parentElement.children[5].textContent
+                    if (e.textContent == 'Shipping Option:') {
+                        a = e.parentElement.children[5].textContent
                         fee_ship_2 = a
                         console.log(a)
                     }
@@ -641,7 +643,7 @@ remove_cart = async (page, product) => {
                 await page.waitForTimeout(2000)
             }
         }
-
+     
     } catch (error) {
         update_error_data = {}
         update_error_data.order_id = product.id
@@ -1079,7 +1081,7 @@ runAllTime = async () => {
     dataShopee = []
     products_name = []
     voucher = []
-    check_order_complete = false
+    check_order_complete = 0
     let get_data_shopee_url = ""
 
     get_data_shopee_url = data_shopee_url + "?slave=" + slavenumber + "&token=kjdaklA190238190Adaduih2ajksdhakAhqiouOEJAK092489ahfjkwqAc92alA&&mode=" + mode
@@ -1351,7 +1353,12 @@ runAllTime = async () => {
                             followed: 0
                         }
 
+                        let delete_cart = await remove_cart(page, productForUser)
+                        console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
 
+                        if(delete_cart == 0){
+                            return
+                        }
                         let check_add_cart
 
                         await page.waitForSelector(".shopee-searchbar-input")
@@ -1534,7 +1541,6 @@ runAllTime = async () => {
 
                     }
 
-                    let delete_cart = await remove_cart(page, product_order_info)
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
                 }
 
