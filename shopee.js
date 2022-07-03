@@ -128,20 +128,23 @@ add_address = async (page, product, cookies) => {
         await page.waitForTimeout(3000)
         await page.goto(address_account_url)
         await page.waitForTimeout(3000)
-        let check_address = await page.$x("//button[contains(text(), 'Delete')]");
+        let check_address = await page.$x("//div[contains(text(), 'Full Name')]")
 
         console.log("Số địa chỉ đang có: " + check_address.length)
         if (check_address.length) {
-
             console.log(moment().format("hh:mm:ss") + " -- Xoá địa chỉ cũ");
             for (let i = 0; i < check_address.length; i++) {
-                await check_address[i].click();
-                await page.waitForTimeout(1000)
+                let check_address1 = await page.$x('//button[contains(text(), "Delete")]')
+
+                await check_address1[0].click();
+                await page.waitForTimeout(2000)
                 let check_address2 = await page.$x('//button[contains(text(), "Delete")]')
 
                 if (check_address2.length == 2) {
                     await check_address2[1].click();
+                    console.log(moment().format("hh:mm:ss") + " -- Xoá địa chỉ: " + i);
                 }
+                await page.waitForTimeout(3000)
             }
         }
 
@@ -167,7 +170,7 @@ add_address = async (page, product, cookies) => {
         let phone_country = ""
         let zipcode = ""
 
-       
+
 
         data.append('name', product.rec_name);
         data.append('icno', '');
@@ -177,7 +180,7 @@ add_address = async (page, product, cookies) => {
         data.append('district', address_data.ward);
         data.append('town', address_data.barangay);
         data.append('address', address_data.address);
-        
+
         if (address_data.zipcode) {
             let z = address_data.zipcode
             data.append('zipcode', z);
@@ -300,9 +303,9 @@ add_address = async (page, product, cookies) => {
                 return 0
             }
 
-        } 
-        
-        if(body.error == "invalid address") {
+        }
+
+        if (body.error == "invalid address") {
             update_error_data = {}
             update_error_data.order_id = product.id
             update_error_data.username = product.username
@@ -398,8 +401,8 @@ action_order = async (page, product) => {
 
             console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ships);
             let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
-            
-            if(check_not_support_shiping.length){
+
+            if (check_not_support_shiping.length) {
                 update_error_data = {}
                 update_error_data.order_id = product.id
                 update_error_data.username = product.username
@@ -412,17 +415,17 @@ action_order = async (page, product) => {
                 return 0
             }
 
-           // await page.waitForTimeout(999999)
+            // await page.waitForTimeout(999999)
             if (product.country == "PH") {
-                if(fee_ships.length > 1){
+                if (fee_ships.length > 1) {
                     let check_fee = fee_ships.split("₱")
                     if (check_fee.length > 1) {
                         fee_ship_1 = parseInt(check_fee[1])
                     }
-                }               
+                }
             }
             // const link = await fee_ships[i].$eval('a', a => a.getAttribute('href'));
-        //    console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ship_1);
+            //    console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ship_1);
 
             if (fee_ship_1 == 0) {
                 //  await page.locator('text=You have not selected any items for checkout').click();
@@ -447,11 +450,11 @@ action_order = async (page, product) => {
                 for (let y = 0; y < voucher_1.length; y++) {
                     x = voucher_1[y]
                     let p = parseInt(x.price)
-                    
+
                     if (p == fee_ship_1) {
                         console.log("--- Nhập code --")
                         console.log(p + " -- " + x.code + " fee: " + fee_ship_1)
-                        await page.type('[placeholder="Shop voucher code"]', x.code)                       
+                        await page.type('[placeholder="Shop voucher code"]', x.code)
                         break
                     }
                 }
@@ -461,32 +464,32 @@ action_order = async (page, product) => {
                     await apply[0].click()
                     await page.waitForTimeout(3000)
                     let check_voucher_expỉed = await page.$x("//div[contains(text(), 'Sorry, this voucher has expired.')]")
-                        if (check_voucher_expỉed.length) {
-                            update_error_data = {}
-                            update_error_data.order_id = product.id
-                            update_error_data.username = product.username
-                            update_error_data.slave = product.slave
-                            update_error_data.error_code = 2001
-                            update_error_data.product_link = product.product_link
-                            update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn"
-                            console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn");
-                            await update_error(update_error_data, 4)
-                            return 0
-                        }
+                    if (check_voucher_expỉed.length) {
+                        update_error_data = {}
+                        update_error_data.order_id = product.id
+                        update_error_data.username = product.username
+                        update_error_data.slave = product.slave
+                        update_error_data.error_code = 2001
+                        update_error_data.product_link = product.product_link
+                        update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn"
+                        console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn");
+                        await update_error(update_error_data, 4)
+                        return 0
+                    }
 
-                        check_voucher_expỉed = await page.$x("//div[contains(text(), 'You have redeemed this voucher before.')]")
-                        if (check_voucher_expỉed.length) {
-                            update_error_data = {}
-                            update_error_data.order_id = product.id
-                            update_error_data.username = product.username
-                            update_error_data.slave = product.slave
-                            update_error_data.error_code = 2001
-                            update_error_data.product_link = product.product_link
-                            update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng"
-                            console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng");
-                            await update_error(update_error_data, 4)
-                            return 0
-                        }
+                    check_voucher_expỉed = await page.$x("//div[contains(text(), 'You have redeemed this voucher before.')]")
+                    if (check_voucher_expỉed.length) {
+                        update_error_data = {}
+                        update_error_data.order_id = product.id
+                        update_error_data.username = product.username
+                        update_error_data.slave = product.slave
+                        update_error_data.error_code = 2001
+                        update_error_data.product_link = product.product_link
+                        update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng"
+                        console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng");
+                        await update_error(update_error_data, 4)
+                        return 0
+                    }
                 }
 
             }
@@ -650,7 +653,7 @@ remove_cart = async (page, product) => {
         update_error_data.error_log = "Lỗi hệ thống khi xoá sản phẩm trong giỏ hàng"
         await update_error(update_error_data, 4)
         console.log(error)
-        return 0        
+        return 0
     }
     return 1
 
@@ -687,7 +690,7 @@ login_shopee = async (page, accounts, browser) => {
             await page.waitForSelector('.social-white-google-png')
             await page.click('.social-white-google-png')
 
-            await page.waitForTimeout(5000)
+            await page.waitForTimeout(10000)
 
             let page1 = (await browser.pages())[1];
             await page1.waitForTimeout(3000)
@@ -698,6 +701,7 @@ login_shopee = async (page, accounts, browser) => {
 
             await page1.click('[id="identifierNext"]')
             await page1.waitForTimeout(5000)
+            await page1.waitForSelector('[autocomplete="current-password"]')
             await page1.type('[autocomplete="current-password"]', accounts[1], { delay: 100 })    // Nhập comment 
             await page1.waitForTimeout(2000)
             let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
@@ -1367,7 +1371,7 @@ runAllTime = async () => {
                             // await page.waitForTimeout(999999)
                             if (check_add_address == 0) {
                                 shell.exec('pm2 restart all');
-                                return 
+                                return
                             }
                         }
 
@@ -1458,8 +1462,6 @@ runAllTime = async () => {
 
                                 products_name.push(productForUser.product_name)
 
-                                check_point = await check_point_hour(productForUser.uid)
-
                                 product_order_info = productForUser
 
                                 product_order_info.shopee_country_url = shopee_country_url
@@ -1494,11 +1496,9 @@ runAllTime = async () => {
                                     let check_1 = await action_add_cart(page, productForUser)
 
                                     if (check_1) {
-
                                         console.log(moment().format("hh:mm:ss") + "- Bỏ giỏ ok- " + productForUser.product_id + " : " + check_add_cart)
                                     } else {
                                         console.log(moment().format("hh:mm:ss") + "- Có lỗi khi chọn sản phẩm - " + productForUser.product_id + " : " + check_add_cart)
-
                                     }
 
                                 } else {
@@ -1512,9 +1512,7 @@ runAllTime = async () => {
 
                             //    await removeCart(page)
                             await page.waitForTimeout(1000);
-
                         }
-                    
                     }
 
                     product_order_info.products_name = products_name
@@ -1526,20 +1524,17 @@ runAllTime = async () => {
                     //await page.waitForTimeout(999999);
                     //  check_2 = 1
                     if (check_2 == 1) {
-                    //    if (check_order_complete == true) {
+                        console.log("ORDER: " + check_order_complete)
+                        if (check_order_complete == true) {
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
-
                             product_order_info.action = "order_product"
                             await updatePoint(product_order_info, 3)
-                    //    }
-
+                        }
                     } else {
 
                     }
 
                     let delete_cart = await remove_cart(page, product_order_info)
-
-
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
                 }
 
@@ -1548,7 +1543,6 @@ runAllTime = async () => {
                     console.log(moment().format("hh:mm:ss") + " PM2 restart ")
                     shell.exec('pm2 restart all');
                 }
-
             }
         } catch (error) {
             console.log(error)
