@@ -383,7 +383,7 @@ action_order = async (page, product) => {
             await update_error(update_error_data, 4)
             return 0
         }
-        
+
         // add voucher
         if (voucher_1.length) {
             console.log(moment().format("hh:mm:ss") + " -- Add voucher sản phẩm ");
@@ -499,9 +499,15 @@ action_order = async (page, product) => {
 
         await page.waitForTimeout(2000)
         await page.keyboard.press("PageDown");
-        await page.waitForTimeout(2000)
+        await page.waitForTimeout(5000)
 
         let check_btn_cod = await page.$$('[aria-label="Cash on Delivery"]')
+
+        if(check_btn_cod.length == 0){
+            check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery')]")
+        }
+         
+
         if (check_btn_cod.length) {
             await check_btn_cod[0].click()
 
@@ -512,6 +518,20 @@ action_order = async (page, product) => {
                 await checkout[0].click()
             }
             await page.waitForTimeout(5000)
+
+            let check_account_suppen = await page.$x("//p[contains(text(), 'Action Failed (A02): Your account has been suspended as our system detected a suspicious behaviour of mass creation of accounts. Please make sure to comply with Shopee policies.')]")
+            if (check_account_suppen.length) {
+                update_error_data = {}
+                update_error_data.order_id = product.id
+                update_error_data.username = product.username
+                update_error_data.slave = product.slave
+                update_error_data.error_code = 2005
+                update_error_data.product_link = product.product_link
+                update_error_data.error_log = "Tài khoản bị khoá"
+                console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị khoá: " + product.username);
+                await update_error(update_error_data, 4)
+                return 0
+            }
         } else {
 
             update_error_data = {}
@@ -520,8 +540,8 @@ action_order = async (page, product) => {
             update_error_data.slave = product.slave
             update_error_data.error_code = 1003
             update_error_data.product_link = product.product_link
-            update_error_data.error_log = "Địa chỉ không đúng, vui lòng kiểm tra lại"
-            console.log(moment().format("hh:mm:ss") + " -- Địa chỉ không đúng, vui lòng kiểm tra lại");
+            update_error_data.error_log = "Không tìm thấy nút mua hàng, Địa chỉ không đúng, vui lòng kiểm tra lại"
+            console.log(moment().format("hh:mm:ss") + " -- Không tìm thấy nút mua hàng, Địa chỉ không đúng, vui lòng kiểm tra lại");
             await update_error(update_error_data, 4)
             return 0
         }
@@ -643,7 +663,7 @@ remove_cart = async (page, product) => {
                 await page.waitForTimeout(2000)
             }
         }
-     
+
     } catch (error) {
         update_error_data = {}
         update_error_data.order_id = product.id
@@ -1356,7 +1376,7 @@ runAllTime = async () => {
                         let delete_cart = await remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
 
-                        if(delete_cart == 0){
+                        if (delete_cart == 0) {
                             return
                         }
                         let check_add_cart
