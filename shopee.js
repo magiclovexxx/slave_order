@@ -1284,9 +1284,13 @@ runAllTime = async () => {
         try {
 
             console.log(moment().format("hh:mm:ss") + " - Load: " + shopee_full_url)
+            try {
+                await page.goto(shopee_full_url)
 
-            await page.goto(shopee_full_url)
-
+            } catch (error) {
+                return
+            }
+            
             // login account shopee                    
             let checklogin = await login_shopee(page, subAccount, browser)
 
@@ -1572,7 +1576,7 @@ runAllTime = async () => {
             }
         } catch (error) {
             console.log(error)
-            // await updateErrorLogs(error, slavenumber)
+            return
         }
     })
 }
