@@ -1,28 +1,83 @@
-const axios = require('axios').default;
 require('dotenv').config();
-const moment = require('moment')
-const shopeeApi = require('./src/shopeeApi.js')
-var ip_address = require("ip");
-const randomUseragent = require('random-useragent');
-const exec = require('child_process').exec;
-mode = process.env.MODE
-os_slave = process.env.OS_SLAVE
-var shell = require('shelljs');
-var profileDir = process.env.PROFILE_DIR
-slavenumber = process.env.SLAVE
-const { v4: uuidv4 } = require('uuid');
 var fs = require('fs');
+const shopeeApi = require('./src/shopeeApi.js')
+const actionsShopee = require('./src/actions.js')
+const axios = require('axios').default;
+const moment = require('moment')
 
-//$env:PWDEBUG=1
+const puppeteer = require('puppeteer-extra')
+const StealthPlugin = require('puppeteer-extra-plugin-stealth')
+puppeteer.use(StealthPlugin())
 
-headless_mode = false
-const {
-    webkit,
-    firefox,
-    chromium
-} = require('playwright');
-const { address } = require('ip');
+const exec = require('child_process').exec;
+const randomUseragent = require('random-useragent');
+const publicIp = require('public-ip');
+var shell = require('shelljs');
+const { preparePageForTests } = require('./src/bypass');
+const bypassTest = require('./src/bypassTest');
+var ip_address = require("ip");
 
+slavenumber = process.env.SLAVE
+account_check = process.env.ACCOUNT_CHECK
+product_check = process.env.PRODUCT_CHECK
+keyword_check = process.env.KEYWORD_CHECK
+
+chromiumDir = process.env.CHROMIUM_DIR                     // Đường dẫn thư mục chromium sẽ khởi chạy
+let profileDir = process.env.PROFILE_DIR
+phobien = process.env.PHO_BIEN         //Chế độ chạy phổ biến
+// Danh sách profile fb trong file .env
+maxTab = process.env.MAXTAB_SHOPEE  // Số lượng tab chromium cùng mở tại 1 thời điểm trên slave
+max_turn = process.env.MAX_TURN  // Số lượng keyword trên slave
+headless_mode = process.env.HEADLESS_MODE     // che do chay hien thi giao dien
+//disable_image = process.env.DISABLE_IMAGE     // k load ảnh
+disable_css = process.env.DISABLE_CSS     // k load css
+os_slave = process.env.OS     // k load css
+//process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0
+
+if (headless_mode == "0") {
+    headless_mode = true
+} else {
+    headless_mode = false
+}
+
+check_die = 0
+console.log("headless_mode: " + headless_mode + " --- OS SLAVE:" + os_slave)
+
+// Danh sách profile facebook trong mỗi slave
+mode = process.env.MODE
+
+if (mode === "DEV") {
+    apiUrl = "http://beta.aos.asia"   
+    updateActionsUrl = "https://beta.aos.asia"
+  
+
+} else {
+    apiUrl = "http://api.aos.asia"
+    apiServer = "http://history.aos.asia:4000"
+    updateActionsUrl = "https://api.aos.asia"
+}
+
+shopee_account_update_url = apiUrl + "/api_user/shopeeAccountUpdate" // Link update account shopee status
+data_shopee_url = apiUrl + "/api_user/dataShopee"     // Link shopee update thứ hạng sản phẩm
+shopee_update_seo_san_pham_url = apiUrl + "/api_user/shopeeUpdateSeoSanPham"     // Link shopee update seo sản phẩm
+
+update_actions_url = updateActionsUrl + "/api_user/update_action"     // Update actions
+update_error_url = updateActionsUrl + "/api_user/update_error"     // Update error
+update_cookie_url = updateActionsUrl + "/api_user/update_cookie"     // Update cookie
+update_point_url = updateActionsUrl + "/api_user/update_point"     // Update actions
+
+getSlaveAccountDir = apiUrl + "/api_user/getSlaveAccount"     // Lay tai khoan shopee cho slave
+getSlaveInfo = apiUrl + "/api_user/getSlaveInfo"     // Lay thong tin cau hinh slave
+
+
+if (mode === "DEV") {
+    timemax = 3000;
+    timemin = 2000;
+} else {
+    timemax = 3000;
+    timemin = 2000;
+}
+logs = 1
 
 login_google = async (page, accounts) => {
 
@@ -45,20 +100,24 @@ login_google = async (page, accounts) => {
 add_address = async (page, product, cookies) => {
     try {
 
-
-
         const apiRequestContext = await page.request;
 
         let add_address_url = product.shopee_country_url + "/api/v0/addresses/add/"
         let get_address_url = product.shopee_country_url + "/api/v4/account/address/get_user_address_list?with_warehouse_whitelist_status=true"
         let address_account_url = product.shopee_country_url + "/user/account/address"
-        
-        
+
+
         // // get address list
         let address_list = await apiRequestContext.get(get_address_url)
 
         let address_list_1 = await address_list.json();
-        console.log("số địa chỉ hiện có qua api: " + address_list_1.data.addresses.length)
+
+        if (address_list_1.data.addresses) {
+            console.log("số địa chỉ hiện có qua api: " + address_list_1.data.addresses.length)
+        } else {
+            console.log("số địa chỉ hiện có qua api: " + 0)
+        }
+
 
         // if (address_list_1.data.addresses.length) {
         //     address_list_1 = address_list_1.data.addresses
@@ -82,7 +141,7 @@ add_address = async (page, product, cookies) => {
 
         //     console.log(moment().format("hh:mm:ss") + " -- Xoá địa chỉ cũ ok");
         // }
-
+        await page.waitForTimeout(3000)
         await page.goto(address_account_url)
         await page.waitForTimeout(3000)
         let check_address = await page.$$('text=Delete')
@@ -110,7 +169,7 @@ add_address = async (page, product, cookies) => {
                 'phone': '60168961369',
                 'country': 'MY',
                 'state': 'Kuala Lumpur',
-                'city': 'Kuala',
+                'city': 'Kuala Lumpur',
                 'district': 'Bandar Kuala Lumpur',
                 'address': '35 Jalan Perpaduan Desa Lawan Kuda 31600 Gopeng Perak Malaysia',
                 'place': 'DO_NOT_CHANGE__I_AM_MAGIC',
@@ -136,7 +195,7 @@ add_address = async (page, product, cookies) => {
             console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ thành công ");
 
             // Set địa chỉ defautl
-            let default_address_url = product.shopee_country_url + "/api/v0/addresses/" +address_id  +"/set_default/"
+            let default_address_url = product.shopee_country_url + "/api/v0/addresses/" + address_id + "/set_default/"
             console.log(default_address_url)
             let set_defaut = await apiRequestContext.post(default_address_url, {
                 headers: {
@@ -145,7 +204,7 @@ add_address = async (page, product, cookies) => {
                 }
             })
             set_defaut = await set_defaut.json()
-            if(set_defaut.success == true){
+            if (set_defaut.success) {
                 console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ mặc đỊnh thành công ");
             }
 
@@ -155,6 +214,7 @@ add_address = async (page, product, cookies) => {
             update_error_data.order_id = product.id
             update_error_data.username = product.username
             update_error_data.slave = product.slave
+            update_error_data.error_code = 1001
             update_error_data.product_link = product.product_link
             update_error_data.error_log = "Thông tin địa chỉ không đúng, vui lòng kiểm tra lại"
             console.log(moment().format("hh:mm:ss") + " -- Địa chỉ không đúng ");
@@ -166,9 +226,10 @@ add_address = async (page, product, cookies) => {
         update_error_data.order_id = product.id
         update_error_data.username = product.username
         update_error_data.slave = product.slave
+        update_error_data.error_code = 1001
         update_error_data.product_link = product.product_link
         update_error_data.error_message = error.message
-        update_error_data.error_log = "Có lỗi khi thêm địa chỉ, vui lòng kiểm tra lại"
+        update_error_data.error_log = "Có lỗi hệ thống khi thêm địa chỉ, vui lòng kiểm tra lại"
         console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi thêm địa chỉ ");
         console.log(error)
         await update_error(update_error_data, 4)
@@ -198,7 +259,7 @@ action_order = async (page, product) => {
 
         await page.waitForTimeout(3000)
         page.locator('button:has-text("check out")').click()
-        await page.waitForTimeout(2000)
+        await page.waitForTimeout(8600)
 
         let check_select_item = await page.$$('text=You have not selected any items for checkout')
         if (check_select_item.length) {
@@ -207,8 +268,10 @@ action_order = async (page, product) => {
             update_error_data.order_id = product.id
             update_error_data.username = product.username
             update_error_data.slave = product.slave
+            update_error_data.error_code = 1002 
             update_error_data.product_link = product.product_link
             update_error_data.error_log = "Có lỗi hệ thống khi chọn sản phẩm"
+            console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi  chọn sản phẩm ");
             await update_error(update_error_data, 4)
             return 0
         }
@@ -226,8 +289,10 @@ action_order = async (page, product) => {
             update_error_data.order_id = product.id
             update_error_data.username = product.username
             update_error_data.slave = product.slave
+            update_error_data.error_code = 1003
             update_error_data.product_link = product.product_link
             update_error_data.error_log = "Không tìm thấy chế độ thanh toán khi nhận hàng. Hệ thống sẽ thử đặt hàng lại sau"
+            console.log(moment().format("hh:mm:ss") + " -- Không tìm thấy chế độ thanh toán khi nhận hàng ");
             await update_error(update_error_data, 4)
             return 0
         }
@@ -237,6 +302,7 @@ action_order = async (page, product) => {
         update_error_data.order_id = product.id
         update_error_data.username = product.username
         update_error_data.slave = product.slave
+        update_error_data.error_code = 1004
         update_error_data.product_link = product.product_link
         update_error_data.error_message = error.message
         update_error_data.error_log = "Có lỗi hệ thống khi đặt hàng"
@@ -296,6 +362,7 @@ action_add_cart = async (page, product) => {
             update_error_data.order_id = product.id
             update_error_data.username = product.username
             update_error_data.slave = product.slave
+            update_error_data.error_code = 1005
             update_error_data.product_link = product.product_link
             update_error_data.error_log = "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
             await update_error(update_error_data, 4)
@@ -322,6 +389,7 @@ action_add_cart = async (page, product) => {
         update_error_data.slave = product.slave
         update_error_data.product_link = product.product_link
         update_error_data.error_message = error.message
+        update_error_data.error_code = 1006
         update_error_data.error_log = "Lỗi hệ thống khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
         await update_error(update_error_data, 4)
         console.log(error)
@@ -354,64 +422,119 @@ remove_cart = async (page, product) => {
 
 }
 
-login_shopee = async (page, context, accounts) => {
-    await page.waitForTimeout(3000)
+login_shopee = async (page, accounts) => {
+    try {
+        await page.waitForTimeout(3000)
 
-    check = await page.$$('button:has-text("English")')
-    if (check.length) {
-        await page.locator('button:has-text("English")').click();
-    }
-
-    await page.waitForTimeout(3000)
-
-    check = await page.$$('.shopee-popup__close-btn')
-    if (check.length) {
-        await page.locator('.shopee-popup__close-btn').click();
-    }
-
-    await page.waitForTimeout(3000)
-    let check_login = await page.$$('text=Login')
-
-    if (check_login.length > 0) {
-        console.log(" ---- Chưa login tài khoản ----")
-
-        // Click text=Login
-        await page.locator('text=Login').click();
+        let check = await page.$$('button:has-text("English")')
+      
+        if (check.length) {
+            await page.locator('button:has-text("English")').click();
+        }
 
         await page.waitForTimeout(3000)
-        // Click button:has-text("Google")
-        await page.locator('button:has-text("Google")').click()
-        // Fill [aria-label="Email hoặc số điện thoại"]
+
+        check = await page.$$('.shopee-popup__close-btn')
+        if (check.length) {
+            await page.locator('.shopee-popup__close-btn').click();
+        }
 
         await page.waitForTimeout(3000)
-        page1 = (await context.pages())[1]
+        let check_login = await page.$$('text=Login')
+        console.log("Check login : " + check_login)
 
-        await page1.locator('[aria-label="Email hoặc số điện thoại"]').fill(accounts[0]);
-        // Click button:has-text("Tiếp theo")
-        await page1.waitForTimeout(1000)
+        if (check_login.length > 0) {
+            console.log(" ---- Chưa login tài khoản ----")
 
-        await page1.locator('button:has-text("Tiếp theo")').click()
+            // Click text=Login
+            await page.locator('text=Login').click();
 
-        await page1.waitForTimeout(1000)
-        // Fill [aria-label="Nhập mật khẩu của bạn"]
-        await page1.locator('[aria-label="Nhập mật khẩu của bạn"]').fill(accounts[1]);
-        // Click button:has-text("Tiếp theo")
-        await page1.waitForTimeout(1000)
-        await page1.locator('button:has-text("Tiếp theo")').click()
-        // Close page
+            await page.waitForTimeout(5000)
+            // Click button:has-text("Google")
+            await page.locator('button:has-text("Google")').click()
+            // Fill [aria-label="Email hoặc số điện thoại"]
 
-        await page1.waitForTimeout(5000)
-        // await page.goto('https://shopee.com.my/');
+            await page.waitForTimeout(5000)
 
+            page1 = await context.pages()[1]
+
+            let check1 = await page1.$$('[aria-label="Email or phone"]')
+
+            if (check1.length) {
+                await page1.locator('[aria-label="Email or phone"]').fill(accounts[0]);
+            }
+
+            check1 = await page1.$$('[aria-label="Email hoặc số điện thoại"]')
+            if (check1.length) {
+                await page1.locator('[aria-label="Email hoặc số điện thoại"]').fill(accounts[0]);
+            }
+
+            // Click button:has-text("Tiếp theo")
+            await page1.waitForTimeout(1000)
+            check1 = await page1.$$('button:has-text("Tiếp theo")')
+            if (check1.length) {
+                await page1.locator('button:has-text("Tiếp theo")').click()
+            }
+
+            check1 = await page1.$$('button:has-text("Next")')
+            if (check1.length) {
+                await page1.locator('button:has-text("Next")').click()
+            }
+
+            await page1.waitForTimeout(5000)
+            // Fill [aria-label="Nhập mật khẩu của bạn"]
+
+            check1 = await page1.$$('[aria-label="Nhập mật khẩu của bạn"]')
+            if (check1.length) {
+                await page1.locator('[aria-label="Nhập mật khẩu của bạn"]').fill(accounts[1]);
+            }
+
+            check1 = await page1.$$('[aria-label="Enter your password"]')
+            if (check1.length) {
+                await page1.locator('[aria-label="Enter your password"]').fill(accounts[1]);
+            }
+
+
+            // Click button:has-text("Tiếp theo")
+            await page1.waitForTimeout(1000)
+
+            check1 = await page1.$$('button:has-text("Tiếp theo")')
+            if (check1.length) {
+                await page1.locator('button:has-text("Tiếp theo")').click()
+            }
+
+            check1 = await page1.$$('button:has-text("Next")')
+            if (check1.length) {
+                await page1.locator('button:has-text("Next")').click()
+            }
+            // Close page
+
+            await page1.waitForTimeout(5000)
+            // await page.goto('https://shopee.com.my/');
+        }
+
+        await page.waitForTimeout(5000)
+        check_login = await page.$$('text=Login')
+        if (check_login.length == 0) {
+            console.log(" ---- check login thành công ----" + check_login.length)
+            return 1
+        } else {
+            return 4 // Lỗi đăng nhập
+        }
+    } catch (error) {
+        update_error_data = {}
+        update_error_data.order_id = product.id
+        update_error_data.username = product.username
+        update_error_data.slave = product.slave
+        update_error_data.error_code = 1007
+        update_error_data.product_link = product.product_link
+        update_error_data.error_message = error.message
+        update_error_data.error_log = "Lỗi hệ thống khi login"
+        await update_error(update_error_data, 4)
+        console.log(error)
+        return 0
     }
 
-    check_login = await page.$$('text=Login')
-    if (check_login.length == 0) {
-        console.log(" ---- check login thành công ----" + check_login.length)
-        return 1
-    } else {
-        return 4 // Lỗi đăng nhập
-    }
 }
 
 
@@ -585,16 +708,45 @@ function sleep(ms) {
     });
 }
 
-gen_browser = async (engine, option) => {
 
+test_browser = async (option) => {
+    let param = [
+        // `--user-data-dir=${profile_dir}`,      // load profile chromium
+        '--disable-gpu',
+        '--no-sandbox',
+        '--lang=en-US',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-background-timer-throttling',
+        '--disable-backgrounding-occluded-windows',
+        '--disable-renderer-backgrounding',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+      //  '--lang=' + user_lang,
+        '--disable-reading-from-canvas'
+    ]
+
+    const browser = await puppeteer.launch({
+        //executablePath: chromiumDir,
+        headless: headless_mode,
+        devtools: false,
+     //   userDataDir: `${profile_dir}`,
+        args: param
+    });
+
+    const page = (await browser.pages())[0];
+}
+
+
+gen_browser = async (option) => {
+    let profile_dir = option.profile_dir
     let proxy1 = option.proxy
     let headless_mode = option.headless_mode
     let network = option.network
     let user_lang = option.user_lang
 
-    let user_agent = option.user_agent
-
-    // console.log("Profile chrome link: " + profile_dir)
+    console.log("Profile chrome link: " + profile_dir)
 
     let param = [
         // `--user-data-dir=${profile_dir}`,      // load profile chromium
@@ -613,47 +765,104 @@ gen_browser = async (engine, option) => {
         '--disable-reading-from-canvas'
     ]
 
-    let proxy_pass
+    // if(mode==="DEV"){
+    //     network = ""
+    // }
 
-    try {
-        proxy_pass = proxy1.proxy_password.split("\r")[0]
-    } catch (error) {
-        proxy_pass = proxy1.proxy_password
+    if (network == "proxy") {
+        //'--proxy-server=103.90.230.170:9043'
+
+        let proxy_for_slave = "--proxy-server=" + proxy1.proxy_ip + ":" + proxy1.proxy_port
+        param.push(proxy_for_slave)
+        param.push('--ignore-certificate-errors')
     }
 
-    console.log(" proxxy ip: " + proxy1.proxy_ip + ":" + proxy1.proxy_port + ":" + proxy1.proxy_username + ":" + proxy_pass)
+    const browser = await puppeteer.launch({
+        //executablePath: chromiumDir,
+        headless: headless_mode,
+        devtools: false,
+        userDataDir: `${profile_dir}`,
+        args: param
+    });
 
-    const PROFILE_NAME = uuidv4();
-
-    if (fs.existsSync(`./firefox-profile`)) {
-        fs.rmSync(`./firefox-profile`, { recursive: true, force: true });
-    }
-    if (!fs.existsSync(`./firefox-profile`)) {
-        fs.mkdirSync(`./firefox-profile`);
-    }
-    if (!fs.existsSync(`./firefox-profile/${PROFILE_NAME}`)) {
-        fs.mkdirSync(`./firefox-profile/${PROFILE_NAME}`);
-        // fs.mkdirSync(`./firefox-profile/${PROFILE_NAME}/extensions`);
-        // const extensions = fs.readdirSync(`./firefox-extensions`).filter(x => x.endsWith('.xpi'));
-        // for (let i = 0; i < extensions.length; i++) {
-        //     fs.copyFileSync(`./firefox-extensions/${extensions[i]}`, `./firefox-profile/${PROFILE_NAME}/extensions/${extensions[i]}`)
-        // }
-    }
-    var context = await firefox.launchPersistentContext(
-        `./firefox-profile/${PROFILE_NAME}`,
-        {
-            proxy: {
-                server: `${proxy1.proxy_ip}:${proxy1.proxy_port}`,
-                username: proxy1.proxy_username,
-                password: proxy_pass
-            },
-            headless: false
-        }
-    );
-
-    return context
+    return browser
 }
 
+gen_page = async (browser, option) => {
+
+    const page = (await browser.pages())[0];
+    //const page = await browser.newPage()
+    await preparePageForTests(page);
+
+    let user_agent1 = option.user_agent
+    let proxy1 = option.proxy
+    let cookie1 = option.cookie
+    let network = option.network
+
+    await page.setUserAgent(user_agent1)
+
+    // Random kích cỡ màn hình
+    width = Math.floor(Math.random() * (1280 - 1000)) + 1000;;
+    height = Math.floor(Math.random() * (800 - 600)) + 600;;
+    console.log("Kích thước màn hình: " + width + " x " + height)
+
+    await page.setViewport({
+        width: width,
+        height: height
+    });
+
+    // if(mode==="DEV"){
+    //     network = ""
+    // }
+
+    if (network == "proxy") {
+        
+        let proxy_pass
+        try {
+            proxy_pass = proxy1.proxy_password.split("\r")[0]
+        } catch (error) {
+            proxy_pass = proxy1.proxy_password
+        }
+        
+        console.log(" proxxy ip: " + proxy1.proxy_ip + ":" + proxy1.proxy_port + ":" + proxy1.proxy_username + ":" + proxy_pass)
+        await page.authenticate({ username: proxy1.proxy_username, password: proxy_pass });
+    }
+
+    try {
+        if (cookie1.length) {
+            let cookie111 = JSON.parse(cookie1)
+            //console.log(cookie111)
+            // cookie111.forEach(async (item) => {
+            //     await page.setCookie(item);
+            // })
+        //    await page.setCookie(...cookie111);
+            console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
+        }
+    } catch (e) {
+        console.log(" ---- Lỗi set coookie ----")
+    }
+
+    return page
+}
+
+
+
+login_google = async (page) =>{
+
+    username = "thienlon1923@gmail.com"
+    password = "Muaha2017"
+    await page.goto("https://mail.google.com")
+    await page.click('[autocomplete="username"]')
+    await page.waitForTimeout(1000)
+    await page.type('[autocomplete="username"]', username, { delay: 100 })    // Nhập user 
+   
+    await page.click ('[id="identifierNext"]')
+    await page.waitForTimeout(3000)
+    await page.type('[autocomplete="current-password"]', password, { delay: 100 })    // Nhập comment 
+    await page.waitForTimeout(2000)
+    click_next = await page.$$('[data-is-touch-wrapper="true"]')[1]
+
+}
 
 
 runAllTime = async () => {
@@ -662,33 +871,7 @@ runAllTime = async () => {
     dataShopee = []
     products_name = []
     check_order_complete = false
-
-    update_point = apiUrl = "https://api.aos.asia"
-    updateActionsUrl = "https://api.aos.asia"
-    console.log("HOST NAME : " + apiUrl)
-
-    if (mode === "DEV") {
-        apiUrl = "https://beta.aos.asia"
-        apiServer = "https://history.aos.asia:3000"
-        updateActionsUrl = "https://beta.aos.asia"
-        update_point = "https://beta.aos.asia"
-
-    }
-
-    shopee_account_update_url = apiUrl + "/api_user/shopeeAccountUpdate" // Link update account shopee status
-    data_shopee_url = apiUrl + "/api_user/dataShopee"     // Link shopee update thứ hạng sản phẩm
-    shopee_update_seo_san_pham_url = apiUrl + "/api_user/shopeeUpdateSeoSanPham"     // Link shopee update seo sản phẩm
-
-    update_actions_url = updateActionsUrl + "/api_user/update_action"     // Update actions
-    update_error_url = updateActionsUrl + "/api_user/update_error"     // Update error
-    update_cookie_url = updateActionsUrl + "/api_user/update_cookie"     // Update cookie
-    update_point_url = update_point + "/api_user/update_point"     // Update actions
-
-    getSlaveAccountDir = apiUrl + "/api_user/getSlaveAccount"     // Lay tai khoan shopee cho slave
-    getSlaveInfo = apiUrl + "/api_user/getSlaveInfo"     // Lay thong tin cau hinh slave
-
     let get_data_shopee_url = ""
-
 
     get_data_shopee_url = data_shopee_url + "?slave=" + slavenumber + "&token=kjdaklA190238190Adaduih2ajksdhakAhqiouOEJAK092489ahfjkwqAc92alA&&mode=" + mode
     console.log(get_data_shopee_url)
@@ -699,13 +882,9 @@ runAllTime = async () => {
         timeout: 60000,
     })
         .then(function (response) {
-
             dataShopee = response.data
         })
-        .catch(async function (error) {
-            // handle error
-            //console.log(error);
-            // await updateErrorLogs(error, slavenumber)
+        .catch(async function (error) {           
             return false
         })
         .then(function () {
@@ -843,20 +1022,17 @@ runAllTime = async () => {
             user_lang: user_lang
         }
 
-        const context = await gen_browser(firefox, option1)
+        let browser = await gen_browser(option1)
+        let page = await gen_page(browser, option1)
 
-        //   const context = await browser.newContext()
-
-        const page = await context.pages()[0];
 
         try {
             let cookie1 = acc.cookie
-            cookie1 = JSON.parse(cookie1)
 
             if (cookie1.length) {
-
+                cookie1 = JSON.parse(cookie1)
                 console.log(cookie1.length)
-                await context.addCookies([...cookie1])
+                await page.setCookie([...cookie1])
                 console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
             }
         } catch (e) {
@@ -876,7 +1052,7 @@ runAllTime = async () => {
             timeout = Math.floor(Math.random() * (3000 - 2000)) + 2000;
 
             // login account shopee                    
-            let checklogin = await login_shopee(page, context, subAccount)
+            let checklogin = await login_shopee(page,subAccount)
 
             console.log(moment().format("hh:mm:ss") + " - index = " + index + " - check login account: " + subAccount[0] + " - " + checklogin)
 
@@ -921,8 +1097,6 @@ runAllTime = async () => {
             }
             if (checklogin == 1) {
 
-
-
                 if (slaveInfo.type == "order_system") {
                     console.log(moment().format("hh:mm:ss") + " --- Đặt đơn tự động ---")
 
@@ -939,15 +1113,12 @@ runAllTime = async () => {
                         let product_link = order_1.product_link
                         let get_link = product_link.split("/")
                         let shopee_country_url = "https://" + get_link[2]
-
-
-
                         let productForUser                     // Mảng chứa thông tin sản phẩm, từ khoá cần tương tác
                         let check_like = 0
                         let check_follow = 0
 
                         let check_product_exit = "Có tồn tại"
-                        let actions = []                            // Luư lịch sử thao tác
+                        // Luư lịch sử thao tác
                         productForUser = orders[o]
 
                         productForUser.username = subAccount[0]
@@ -978,7 +1149,7 @@ runAllTime = async () => {
                             await updateCookie(data_clone, 1)
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
-                            await page.waitForTimeout(999999)
+                           // await page.waitForTimeout(999999)
                             if (check_add_address == 0) {
                                 shell.exec('pm2 restart all');
                             }
@@ -1167,6 +1338,13 @@ runAllTime = async () => {
         }
     })
 }
+
+
+
+//Cron 1 phút 1 lần 
+
+//(async () => {
+
 if (mode === "DEV") {
     (async () => {
 
@@ -1199,6 +1377,5 @@ if (mode === "DEV") {
     })();
 }
 
-//simulate(firefox)
-  //simulate(webkit)
-  //simulate(chromium)
+
+//})();
