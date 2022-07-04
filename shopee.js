@@ -1460,6 +1460,7 @@ runAllTime = async () => {
                         let delete_cart = await remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
                         if (delete_cart == 0) {
+                            await browser.close()
                             return
                         }
 
@@ -1478,7 +1479,7 @@ runAllTime = async () => {
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
                             if (check_add_address == 0) {
-                                shell.exec('pm2 restart all');
+                                await browser.close()
                                 return
                             }
                         }
@@ -1610,7 +1611,7 @@ runAllTime = async () => {
                                     }
 
                                 } else {
-                                  //  break
+                                    console.log(moment().format("hh:mm:ss") + "-Hết điểm số ")
                                     await browser.close()
                                 }
 
