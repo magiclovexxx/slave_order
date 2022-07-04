@@ -408,6 +408,8 @@ action_order = async (page, product) => {
                 return fee_ship_2
             })
 
+            await page.waitForTimeout(delay(4000, 3000))
+
             console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ships);
             let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
 
@@ -531,7 +533,7 @@ action_order = async (page, product) => {
         if (check_btn_cod.length) {
             await check_btn_cod[0].click()
 
-            await page.waitForTimeout(delay(3000, 2000))
+            await page.waitForTimeout(delay(5000, 4000))
 
             let checkout = await page.$$('.stardust-button--primary')
             if (checkout.length) {
@@ -1636,11 +1638,13 @@ runAllTime = async () => {
                         await page.waitForTimeout(delay(6000, 5000))
                         let url_1 = await page.url()
                         let check_url = url_1.split("user/purchase/list")
-
+                       
                         if (check_url.length > 1) {
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
                             await updatePoint(product_order_info, 3)
+                        }else{
+                            product_order_info.result = "fail"
                         }
 
                     } else {
