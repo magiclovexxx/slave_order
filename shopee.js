@@ -357,6 +357,12 @@ action_order = async (page, product) => {
 
         })
 
+        update_error_data = {}
+        update_error_data.order_id = product.id
+        update_error_data.username = product.username
+        update_error_data.slave = product.slave
+        update_error_data.product_link = product.product_link
+
         // await page.locator('text=Abaya Fashion Stripe Muslim Dress Women Long Sleeve Pocket Casual Robe DressesVa >> label div').click();
         // await page.locator('text=Abaya Muslim Elegant Dress Plain Women Fashion Jubah Long Sleeve Belted DressesVa >> label div').click();
         await page.keyboard.press("PageDown");
@@ -373,12 +379,8 @@ action_order = async (page, product) => {
         let check_select_item = await page.$$('.shopee-alert-popup__message')
         if (check_select_item.length) {
             //  await page.locator('text=You have not selected any items for checkout').click();
-            update_error_data = {}
-            update_error_data.order_id = product.id
-            update_error_data.username = product.username
-            update_error_data.slave = product.slave
+           
             update_error_data.error_code = 1002
-            update_error_data.product_link = product.product_link
             update_error_data.error_log = "Có lỗi hệ thống khi chọn sản phẩm"
             console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi  chọn sản phẩm ");
             await update_error(update_error_data, 4)
@@ -410,12 +412,8 @@ action_order = async (page, product) => {
             let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
 
             if (check_not_support_shiping.length) {
-                update_error_data = {}
-                update_error_data.order_id = product.id
-                update_error_data.username = product.username
-                update_error_data.slave = product.slave
+               
                 update_error_data.error_code = 2003
-                update_error_data.product_link = product.product_link
                 update_error_data.error_log = "Lỗi địa chỉ không hỗ trợ ship"
                 console.log(moment().format("hh:mm:ss") + " -- Lỗi địa chỉ không hỗ trợ ship ");
                 await update_error(update_error_data, 4)
@@ -440,12 +438,8 @@ action_order = async (page, product) => {
 
             if (fee_ship_1 == 0) {
                 //  await page.locator('text=You have not selected any items for checkout').click();
-                update_error_data = {}
-                update_error_data.order_id = product.id
-                update_error_data.username = product.username
-                update_error_data.slave = product.slave
+               
                 update_error_data.error_code = 1009
-                update_error_data.product_link = product.product_link
                 update_error_data.error_log = "Lỗi hệ thống không tìm thấy phí ship"
                 console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống không tìm thấy phí ship ");
                 await update_error(update_error_data, 4)
@@ -479,12 +473,6 @@ action_order = async (page, product) => {
 
                 let check_voucher_3 = await page.$$(".input-with-validator__error-message")
 
-                update_error_data = {}
-                update_error_data.order_id = product.id
-                update_error_data.username = product.username
-                update_error_data.slave = product.slave
-                update_error_data.product_link = product.product_link
-
                 if (check_voucher_3.length) {
                     update_error_data.error_code = 2001
                     update_error_data.error_log = "Lỗi voucher " + x.code + " Không đúng"
@@ -515,7 +503,6 @@ action_order = async (page, product) => {
 
                     check_voucher_expỉed = await page.$x("//div[contains(text(), 'You have redeemed this voucher before.')]")
                     if (check_voucher_expỉed.length) {
-
                         update_error_data.error_code = 1011
                         update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng"
                         console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng");
@@ -540,7 +527,6 @@ action_order = async (page, product) => {
         if (check_btn_cod.length == 0) {
             check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery')]")
         }
-
 
         if (check_btn_cod.length) {
             await check_btn_cod[0].click()
@@ -736,7 +722,7 @@ login_shopee = async (page, accounts, browser) => {
         // let y =Math.floor(Math.random() * 50);
         // console.log(x + "x" + y)
         // await page.mouse.click(x, y)
-        await page.click('#cart_drawer_target_id')
+        await page.click('.header-with-search__logo-wrapper')
         await page.waitForTimeout(delay(4000, 3000))
         let check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
         console.log("Check chưa login : " + check_login.length)
