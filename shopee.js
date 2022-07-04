@@ -1363,6 +1363,7 @@ runAllTime = async () => {
             console.log(moment().format("hh:mm:ss") + " - index = " + index + " - check login account: " + subAccount[0] + " - " + checklogin)
 
             if (checklogin == 0 || checklogin == 4) {
+                await browser.close();
                 return
             }
 
@@ -1609,7 +1610,8 @@ runAllTime = async () => {
                                     }
 
                                 } else {
-                                    break
+                                  //  break
+                                    await browser.close()
                                 }
 
                             } catch (error) {
@@ -1638,7 +1640,7 @@ runAllTime = async () => {
                         await page.waitForTimeout(delay(6000, 5000))
                         let url_1 = await page.url()
                         let check_url = url_1.split("user/purchase/list")
-                       
+                        //console.log(check_url)
                         if (check_url.length > 1) {
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
