@@ -379,7 +379,7 @@ action_order = async (page, product) => {
         let check_select_item = await page.$$('.shopee-alert-popup__message')
         if (check_select_item.length) {
             //  await page.locator('text=You have not selected any items for checkout').click();
-           
+
             update_error_data.error_code = 1002
             update_error_data.error_log = "Có lỗi hệ thống khi chọn sản phẩm"
             console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi  chọn sản phẩm ");
@@ -411,20 +411,7 @@ action_order = async (page, product) => {
             await page.waitForTimeout(delay(4000, 3000))
 
             console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ships);
-            let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
 
-            if (check_not_support_shiping.length) {
-               
-                update_error_data.error_code = 2003
-                update_error_data.error_log = "Lỗi địa chỉ không hỗ trợ ship"
-                console.log(moment().format("hh:mm:ss") + " -- Lỗi địa chỉ không hỗ trợ ship ");
-                await update_error(update_error_data, 4)
-                let result = {
-                    code: 0,
-                    voucher: ""
-                }
-                return result
-            }
 
             // await page.waitForTimeout(999999)
             if (product.country == "PH") {
@@ -440,7 +427,7 @@ action_order = async (page, product) => {
 
             if (fee_ship_1 == 0) {
                 //  await page.locator('text=You have not selected any items for checkout').click();
-               
+
                 update_error_data.error_code = 1009
                 update_error_data.error_log = "Lỗi hệ thống không tìm thấy phí ship"
                 console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống không tìm thấy phí ship ");
@@ -505,7 +492,7 @@ action_order = async (page, product) => {
 
                     check_voucher_expỉed = await page.$x("//div[contains(text(), 'You have redeemed this voucher before.')]")
                     if (check_voucher_expỉed.length) {
-                        update_error_data.error_code = 1011
+                        update_error_data.error_code = 2011
                         update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng"
                         console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng");
                         await update_error(update_error_data, 4)
@@ -520,21 +507,36 @@ action_order = async (page, product) => {
             }
         }
 
+        let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
+
+        if (check_not_support_shiping.length) {
+
+            update_error_data.error_code = 2012
+            update_error_data.error_log = "Lỗi địa chỉ không hỗ trợ ship"
+            console.log(moment().format("hh:mm:ss") + " -- Lỗi địa chỉ không hỗ trợ ship ");
+            await update_error(update_error_data, 4)
+            let result = {
+                code: 0,
+                voucher: ""
+            }
+            return result
+        }
+
         await page.waitForTimeout(delay(4000, 3000))
         await page.keyboard.press("PageDown");
         await page.waitForTimeout(delay(4000, 3000))
 
         let check_btn_cod = await page.$$('[aria-label="Cash on Delivery"]')
 
-        if (check_btn_cod.length == 0) {
+        if (check_btn_cod.length >0 ) {
+            await check_btn_cod[0].click()
+            await page.waitForTimeout(delay(5000, 4000))
+        }else{
             check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery')]")
         }
-
+       
         if (check_btn_cod.length) {
-            await check_btn_cod[0].click()
-
-            await page.waitForTimeout(delay(5000, 4000))
-
+           
             let checkout = await page.$$('.stardust-button--primary')
             if (checkout.length) {
                 await checkout[0].click()
@@ -781,7 +783,7 @@ login_shopee = async (page, accounts, browser) => {
                 return 0
             }
 
-        } 
+        }
 
         await page.waitForTimeout(delay(6000, 4000))
         check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
@@ -1359,7 +1361,7 @@ runAllTime = async () => {
 
             // login account shopee                    
             let checklogin = await login_shopee(page, subAccount, browser)
-            
+
             console.log(moment().format("hh:mm:ss") + " - index = " + index + " - check login account: " + subAccount[0] + " - " + checklogin)
 
             if (checklogin == 0 || checklogin == 4) {
@@ -1631,7 +1633,7 @@ runAllTime = async () => {
                     let check_2 = await action_order(page, product_order_info)
                     product_order_info.action = "order_product"
 
-                    await page.waitForTimeout(delay(6000, 4000));
+                    await sleep(delay(6000, 4000));
                     console.log(moment().format("hh:mm:ss") + " - Quá trình đặt đơn: " + check_2.code)
                     //await page.waitForTimeout(999999);
 
@@ -1646,7 +1648,7 @@ runAllTime = async () => {
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
                             await updatePoint(product_order_info, 3)
-                        }else{
+                        } else {
                             product_order_info.result = "fail"
                         }
 
