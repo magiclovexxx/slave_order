@@ -602,15 +602,26 @@ action_add_cart = async (page, product) => {
         let product_models = product.product_models
         let check_variation = 0
         let variation_1
+        console.log(product_info)
+       
+        if(product_info.color == "N/A"){
+            product_info.color = ""
+        }
+        if(product_info.size == "N/A"){
+            product_info.size = ""
+        }
 
         if (product_info.color && product_info.size) {
             variation_1 = product_info.color + "," + product_info.size
-        } else if (!product_info.color && product_info.siz) {
+            
+
+        } else if (!product_info.color && product_info.size) {
             variation_1 = product_info.size
-        } else if (product_info.color && !product_info.siz) {
+        } else if (product_info.color && !product_info.size) {
             variation_1 = product_info.color
         }
 
+        console.log(variation_1)
 
         if (product_models.length) {
             product_models.forEach(e => {
@@ -1246,7 +1257,7 @@ runAllTime = async () => {
 
                 } else {
                     shell.exec('git stash;');
-                    shell.exec('git pull https://magiclovexxx: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@github.com/magiclovexxx/slave_order.git origin master;');
+                    shell.exec('git pull https://magiclovexxx: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@github.com/magiclovexxx/slave_order.git;');
                     shell.exec('npm install;pm2 flush; pm2 start shopee.js; pm2 start restartall.js; pm2 startup; pm2 save; pm2 restart all');
                 }
                 return false
