@@ -637,6 +637,7 @@ action_add_cart = async (page, product) => {
                 console.log(moment().format("hh:mm:ss") + " Chọn Size OK: " + product_info.size);
             }
         } else {
+            console.log(moment().format("hh:mm:ss") + "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng");
             update_error_data = {}
             update_error_data.order_id = product.id
             update_error_data.username = product.username
@@ -658,6 +659,22 @@ action_add_cart = async (page, product) => {
         if (check_btn_add_dard.length > 1) {
             await check_btn_add_dard[0].click();
         }
+
+        check_error_add = await page.$x("//div[contains(text(), 'Please select product variation first')]")
+       
+        if (check_error_add.length > 1) {
+            console.log(moment().format("hh:mm:ss") + " Lỗi khi chọn phân loại hàng, sai phân loại, biến thể");
+            update_error_data = {}
+            update_error_data.order_id = product.id
+            update_error_data.username = product.username
+            update_error_data.slave = product.slave
+            update_error_data.error_code = 1014
+            update_error_data.product_link = product.product_link
+            update_error_data.error_log = "Lỗi khi chọn phân loại hàng, sai phân loại, biến thể"
+            await update_error(update_error_data, 4)
+            return 0
+        }
+
 
         return 1
     } catch (error) {
@@ -759,10 +776,26 @@ login_shopee = async (page, accounts, browser) => {
             let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
             if (click_next.length > 0) {
                 await click_next[1].click()
+            //    await page1.waitForTimeout(delay(3000, 2000))
             }
 
+        //    
 
-            await page1.waitForTimeout(delay(5000, 3000))
+            let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
+            
+            if(check_gmail_block.length){
+                console.log("Email bị block : " + accounts[0])
+                update_error_data = {}
+                update_error_data.order_id = 0
+                update_error_data.username = accounts[0]
+                update_error_data.slave = slavenumber
+                update_error_data.error_code = 1013
+                update_error_data.product_link = ""               
+                update_error_data.error_log = "Email bị block"
+                await update_error(update_error_data, 4)
+                return 2
+            }
+
             try {
                 check_verify = await page.$$('[data-accountrecovery="false"]')
             } catch (error) {
@@ -771,6 +804,7 @@ login_shopee = async (page, accounts, browser) => {
             }
 
             if (check_verify.length) {
+                console.log("Email bị check point : " + accounts[0])
                 update_error_data = {}
                 update_error_data.order_id = 0
                 update_error_data.username = accounts[0]
@@ -780,7 +814,7 @@ login_shopee = async (page, accounts, browser) => {
                 update_error_data.error_message = error.message
                 update_error_data.error_log = "Email bị checkpoint"
                 await update_error(update_error_data, 4)
-                return 0
+                return 2
             }
 
         }
@@ -1456,6 +1490,7 @@ runAllTime = async () => {
                             await page.waitForSelector(".shopee-searchbar-input")
                         } catch (error) {
                             console.log(moment().format("hh:mm:ss") + " --- Loi login: ")
+                            await browser.close()
                             return
                         }
 
@@ -1610,6 +1645,8 @@ runAllTime = async () => {
                                         console.log(moment().format("hh:mm:ss") + "- Bỏ giỏ ok- " + productForUser.product_id + " : " + check_add_cart)
                                     } else {
                                         console.log(moment().format("hh:mm:ss") + "- Có lỗi khi chọn sản phẩm - " + productForUser.product_id + " : " + check_add_cart)
+                                        await browser.close()
+                                        return
                                     }
 
                                 } else {
