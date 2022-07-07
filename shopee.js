@@ -194,7 +194,7 @@ add_address = async (page, product, cookies) => {
         let rec_phone = parseInt(product.rec_phone);
 
         let ph = phone_country + rec_phone
-        
+
         console.log("Phone: " + ph)
 
         data.append('zipcode', zipcode);
@@ -1259,7 +1259,7 @@ runAllTime = async () => {
 
                 } else {
                     shell.exec('git stash;');
-                    shell.exec('git pull https://magiclovexxx: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@github.com/magiclovexxx/slave_order.git;');
+                    shell.exec('git pull origin master');
                     shell.exec('npm install;pm2 flush; pm2 start shopee.js; pm2 start restartall.js; pm2 startup; pm2 save; pm2 restart all');
                 }
                 return false
