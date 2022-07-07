@@ -191,8 +191,10 @@ add_address = async (page, product, cookies) => {
             zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
             phone_country = "63"
         }
+        let rec_phone = parseInt(product.rec_phone);
 
-        let ph = phone_country + product.rec_phone
+        let ph = phone_country + rec_phone
+        
         console.log("Phone: " + ph)
 
         data.append('zipcode', zipcode);
