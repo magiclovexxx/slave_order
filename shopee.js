@@ -538,12 +538,12 @@ action_order = async (page, product) => {
         }
 
         if (check_btn_cod.length) {
-
+            console.log(moment().format("hh:mm:ss") + " -- Click nút đặt đơn: ");
             let checkout = await page.$$('.stardust-button--primary')
             if (checkout.length) {
                 await checkout[0].click()
             }
-            await sleep(delay(6000, 5000))
+            await page.waitForTimeout(delay(3000, 2000))
 
             let check_account_suppen = await page.$x("//p[contains(text(), 'Action Failed (A02): Your account has been suspended as our system detected a suspicious behaviour of mass creation of accounts. Please make sure to comply with Shopee policies.')]")
             if (check_account_suppen.length) {
@@ -571,20 +571,34 @@ action_order = async (page, product) => {
             return result
         }
     } catch (error) {
+
         update_error_data = {}
         update_error_data.order_id = product.id
         update_error_data.username = product.username
         update_error_data.slave = product.slave
         update_error_data.product_link = product.product_link
         update_error_data.error_code = 1004
+        update_error_data.error_message = error.message
         update_error_data.error_log = "Có lỗi hệ thống khi đặt hàng"
         console.log(error)
-        await update_error(update_error_data, 4)
-        let result = {
-            code: 0,
-            voucher: ""
+
+        console.log("Check đặt đơn: " + check_order_complete)
+
+        if (check_order_complete == true) {
+            let result = {
+                code: 1,
+                voucher: ""
+            }
+            return result
+        } else {
+            await update_error(update_error_data, 4)
+            let result = {
+                code: 0,
+                voucher: ""
+            }
+            return result
         }
-        return result
+
     }
     let result = {
         code: 1,
@@ -1207,7 +1221,7 @@ gen_page = async (browser, option) => {
     return page
 }
 
-
+check_order_complete = 0
 
 runAllTime = async () => {
 
@@ -1216,7 +1230,7 @@ runAllTime = async () => {
     dataShopee = []
     products_name = []
     voucher = []
-    check_order_complete = 0
+
     let get_data_shopee_url = ""
 
     get_data_shopee_url = data_shopee_url + "?slave=" + slavenumber + "&token=kjdaklA190238190Adaduih2ajksdhakAhqiouOEJAK092489ahfjkwqAc92alA&&mode=" + mode
@@ -1563,8 +1577,6 @@ runAllTime = async () => {
                                 let check = await response.json()
                                 if (check.error == 0) {
                                     check_add_cart = true
-                                } else {
-                                    check_add_cart = false
                                 }
 
                                 console.log(moment().format("hh:mm:ss") + " - Kiểm tra bỏ giỏ: " + check_add_cart)
@@ -1573,7 +1585,6 @@ runAllTime = async () => {
                             let check_order = url.split("api/v4/checkout/place_or")
                             if (check_order.length > 1) {
                                 check_order_complete = true
-
                                 console.log(moment().format("hh:mm:ss") + " - Kiểm tra đặt hàng: " + check_order_complete)
                             }
 
@@ -1686,7 +1697,7 @@ runAllTime = async () => {
                     if (check_2.code == 1) {
                         console.log("ORDER RESULT: " + check_order_complete)
                         if (check_order_complete == true) {
-                            await sleep(delay(6000, 5000))
+                            //    await sleep(delay(6000, 5000))
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
                             await updatePoint(product_order_info, 3)
