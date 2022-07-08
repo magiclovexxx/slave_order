@@ -1255,13 +1255,10 @@ runAllTime = async () => {
             // Update version mới vào file version.txt
             //fs.writeFileSync('version.txt', newVersion)
             if (mode !== "DEV") {
-                if (os_slave != "LINUX") {
+                shell.exec('git stash;');
+                shell.exec('git pull origin master');
+                shell.exec('npm install;pm2 flush; pm2 start shopee.js; pm2 start restartall.js; pm2 startup; pm2 save; pm2 restart all');
 
-                } else {
-                    shell.exec('git stash;');
-                    shell.exec('git pull origin master');
-                    shell.exec('npm install;pm2 flush; pm2 start shopee.js; pm2 start restartall.js; pm2 startup; pm2 save; pm2 restart all');
-                }
                 return false
             }
         }
@@ -1689,7 +1686,7 @@ runAllTime = async () => {
                     if (check_2.code == 1) {
                         console.log("ORDER RESULT: " + check_order_complete)
                         if (check_order_complete == true) {
-                            await sleep(delay(6000, 5000))                         
+                            await sleep(delay(6000, 5000))
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
                             await updatePoint(product_order_info, 3)
@@ -1705,7 +1702,7 @@ runAllTime = async () => {
                     await updateHistory(product_order_info, 3)
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
                 }
-            //    await sleep(999999);
+                //    await sleep(999999);
                 await browser.close();
                 if (os_slave == "LINUX") {
                     console.log(moment().format("hh:mm:ss") + " PM2 restart ")
