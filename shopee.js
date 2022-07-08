@@ -530,20 +530,20 @@ action_order = async (page, product) => {
 
         let check_btn_cod = await page.$$('[aria-label="Cash on Delivery"]')
 
-        if (check_btn_cod.length >0 ) {
+        if (check_btn_cod.length > 0) {
             await check_btn_cod[0].click()
             await page.waitForTimeout(delay(5000, 4000))
-        }else{
+        } else {
             check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery')]")
         }
-       
+
         if (check_btn_cod.length) {
-           
+
             let checkout = await page.$$('.stardust-button--primary')
             if (checkout.length) {
                 await checkout[0].click()
             }
-            await page.waitForTimeout(delay(4000, 3000))
+            await sleep(delay(6000, 5000))
 
             let check_account_suppen = await page.$x("//p[contains(text(), 'Action Failed (A02): Your account has been suspended as our system detected a suspicious behaviour of mass creation of accounts. Please make sure to comply with Shopee policies.')]")
             if (check_account_suppen.length) {
@@ -605,17 +605,17 @@ action_add_cart = async (page, product) => {
         let check_variation = 0
         let variation_1
         console.log(product_info)
-       
-        if(product_info.color == "N/A"){
+
+        if (product_info.color == "N/A") {
             product_info.color = ""
         }
-        if(product_info.size == "N/A"){
+        if (product_info.size == "N/A") {
             product_info.size = ""
         }
 
         if (product_info.color && product_info.size) {
             variation_1 = product_info.color + "," + product_info.size
-            
+
 
         } else if (!product_info.color && product_info.size) {
             variation_1 = product_info.size
@@ -674,7 +674,7 @@ action_add_cart = async (page, product) => {
         }
 
         check_error_add = await page.$x("//div[contains(text(), 'Please select product variation first')]")
-       
+
         if (check_error_add.length > 1) {
             console.log(moment().format("hh:mm:ss") + " Lỗi khi chọn phân loại hàng, sai phân loại, biến thể");
             update_error_data = {}
@@ -789,21 +789,21 @@ login_shopee = async (page, accounts, browser) => {
             let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
             if (click_next.length > 0) {
                 await click_next[1].click()
-            //    await page1.waitForTimeout(delay(3000, 2000))
+                //    await page1.waitForTimeout(delay(3000, 2000))
             }
 
-        //    
+            //    
 
             let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
-            
-            if(check_gmail_block.length){
+
+            if (check_gmail_block.length) {
                 console.log("Email bị block : " + accounts[0])
                 update_error_data = {}
                 update_error_data.order_id = 0
                 update_error_data.username = accounts[0]
                 update_error_data.slave = slavenumber
                 update_error_data.error_code = 1013
-                update_error_data.product_link = ""               
+                update_error_data.product_link = ""
                 update_error_data.error_log = "Email bị block"
                 await update_error(update_error_data, 4)
                 return 2
@@ -1332,6 +1332,7 @@ runAllTime = async () => {
 
         subAccount[0] = acc.username
         subAccount[2] = acc.id
+        subAccount[3] = acc.type
         try {
             subAccount[1] = acc.password.split("\r")[0]
         } catch (error) {
@@ -1577,8 +1578,6 @@ runAllTime = async () => {
                                 check_order_complete = true
 
                                 console.log(moment().format("hh:mm:ss") + " - Kiểm tra đặt hàng: " + check_order_complete)
-                            } else {
-                                check_order_complete = false
                             }
 
                             check_link_san_pham = url.split("item/get?itemid=" + productForUser.product_id)
@@ -1689,12 +1688,8 @@ runAllTime = async () => {
 
                     if (check_2.code == 1) {
                         console.log("ORDER RESULT: " + check_order_complete)
-                        // if (check_order_complete == true) {
-                        await page.waitForTimeout(delay(6000, 5000))
-                        let url_1 = await page.url()
-                        let check_url = url_1.split("user/purchase/list")
-                        //console.log(check_url)
-                        if (check_url.length > 1) {
+                        if (check_order_complete == true) {
+                            await sleep(delay(6000, 5000))                         
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
                             await updatePoint(product_order_info, 3)
@@ -1704,15 +1699,13 @@ runAllTime = async () => {
 
                     } else {
                         product_order_info.result = "fail"
-
                     }
 
                     product_order_info.voucher = check_2.voucher
                     await updateHistory(product_order_info, 3)
-
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
                 }
-
+            //    await sleep(999999);
                 await browser.close();
                 if (os_slave == "LINUX") {
                     console.log(moment().format("hh:mm:ss") + " PM2 restart ")
