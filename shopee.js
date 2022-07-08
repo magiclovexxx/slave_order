@@ -19,16 +19,12 @@ const preloadFile = fs.readFileSync('./preload.js', 'utf8');
 puppeteer.use(StealthPlugin())
 
 slavenumber = process.env.SLAVE
-account_check = process.env.ACCOUNT_CHECK
-product_check = process.env.PRODUCT_CHECK
-keyword_check = process.env.KEYWORD_CHECK
+account_check = process.env.ACCOUNT
+order_check = process.env.ORDER_ID
 
 chromiumDir = process.env.CHROMIUM_DIR                     // Đường dẫn thư mục chromium sẽ khởi chạy
 let profileDir = process.env.PROFILE_DIR
-phobien = process.env.PHO_BIEN         //Chế độ chạy phổ biến
-// Danh sách profile fb trong file .env
-maxTab = process.env.MAXTAB_SHOPEE  // Số lượng tab chromium cùng mở tại 1 thời điểm trên slave
-max_turn = process.env.MAX_TURN  // Số lượng keyword trên slave
+
 headless_mode = process.env.HEADLESS_MODE     // che do chay hien thi giao dien
 //disable_image = process.env.DISABLE_IMAGE     // k load ảnh
 disable_css = process.env.DISABLE_CSS     // k load css
@@ -544,13 +540,28 @@ action_order = async (page, product) => {
                 await checkout[0].click()
             }
             await page.waitForTimeout(delay(3000, 2000))
+           // await page.waitForTimeout(9999999)
 
             let check_account_suppen = await page.$x("//p[contains(text(), 'Action Failed (A02): Your account has been suspended as our system detected a suspicious behaviour of mass creation of accounts. Please make sure to comply with Shopee policies.')]")
-            if (check_account_suppen.length) {
 
-                update_error_data.error_code = 2005
-                update_error_data.error_log = "Tài khoản bị khoá"
-                console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị khoá: " + product.username);
+            let check_account_limit = await page.$x("//div[contains(text(), 'Sorry, you have reached the Cash on Delivery order limit.')]")
+
+            if (check_account_suppen.length || check_account_limit.length) {
+
+                if (check_account_limit.length) {
+                    update_error_data.error_code = 2006
+                    update_error_data.error_log = "Tài khoản limit"
+                    console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị limit: " + product.username);
+
+                }
+
+                if (check_account_suppen.length) {
+                    update_error_data.error_code = 2005
+                    update_error_data.error_log = "Tài khoản bị khoá"
+                    console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị khoá: " + product.username);
+
+                }
+
                 await update_error(update_error_data, 4)
                 let result = {
                     code: 0,
@@ -582,7 +593,7 @@ action_order = async (page, product) => {
         update_error_data.error_log = "Có lỗi hệ thống khi đặt hàng"
         console.log(error)
 
-        console.log("Check đặt đơn: " + check_order_complete)
+        console.log("Check đặt đơn khi gặp lỗi: " + check_order_complete)
 
         if (check_order_complete == true) {
             let result = {
@@ -617,64 +628,92 @@ action_add_cart = async (page, product) => {
 
         let product_models = product.product_models
         let check_variation = 0
-        let variation_1
+        let variation = ""
         console.log(product_info)
 
-        if (product_info.color == "N/A") {
-            product_info.color = ""
+        if (product_info.color) {
+            product_info.variation_1 = product_info.color
         }
-        if (product_info.size == "N/A") {
-            product_info.size = ""
+        if (product_info.size) {
+            product_info.variation_2 = product_info.size
+        }
+        if (product_info.variation_1 == "N/A" || product_info.color == "N/A") {
+            product_info.variation_1 = ""
+        }
+        if (product_info.variation_2 == "N/A" || product_info.size == "N/A") {
+            product_info.variation_2 = ""
+        }
+        if (product_info.variation_3 == "N/A") {
+            product_info.variation_3 = ""
         }
 
-        if (product_info.color && product_info.size) {
-            variation_1 = product_info.color + "," + product_info.size
+        let variations = [product_info.variation_1, product_info.variation_2, product_info.variation_3]
+        variations.forEach((e, index) => {
+            if (e) {
+                if (index == 0) {
+                    variation = e
+                } else {
+                    variation = variation + "," + e
+                }
+            }
+        })
 
 
-        } else if (!product_info.color && product_info.size) {
-            variation_1 = product_info.size
-        } else if (product_info.color && !product_info.size) {
-            variation_1 = product_info.color
-        }
+        // if (product_info.color && product_info.size) {
+        //     variation_1 = product_info.color + "," + product_info.size
 
-        console.log(variation_1)
+
+        // } else if (!product_info.color && product_info.size) {
+        //     variation_1 = product_info.size
+        // } else if (product_info.color && !product_info.size) {
+        //     variation_1 = product_info.color
+        // }
+
+        console.log(moment().format("hh:mm:ss") + " -- Phân loại sản phẩm: " + variation);
 
         if (product_models.length) {
             product_models.forEach(e => {
 
-                if (e.name == variation_1 && e.normal_stock > 0) {
+                if (e.name == variation && e.normal_stock > 0) {
                     // còn hàng
                     check_variation = 1
-                    console.log(moment().format("hh:mm:ss") + " -- " + variation_1 + " còn sản phẩm ");
+                    console.log(moment().format("hh:mm:ss") + " -- " + variation + " còn sản phẩm ");
                 }
             })
         }
 
         if (check_variation == 1) {
             // Chọn màu
-            if (product_info.color) {
-                await page.click('[aria-label="' + product_info.color + '"]');
+            if (product_info.variation_1) {
+                await page.click('[aria-label="' + product_info.variation_1 + '"]');
                 await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn Màu OK :" + product_info.color);
+                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 1 :" + product_info.variation_1);
             }
 
-            if (product_info.size) {
-                await page.click('[aria-label="' + product_info.size + '"]');
+            if (product_info.variation_2) {
+                await page.click('[aria-label="' + product_info.variation_2 + '"]');
                 await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn Size OK: " + product_info.size);
+                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 2: " + product_info.variation_2);
             }
-        } else {
-            console.log(moment().format("hh:mm:ss") + "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng");
-            update_error_data = {}
-            update_error_data.order_id = product.id
-            update_error_data.username = product.username
-            update_error_data.slave = product.slave
-            update_error_data.error_code = 2002
-            update_error_data.product_link = product.product_link
-            update_error_data.error_log = "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
-            await update_error(update_error_data, 4)
-            return 0
+
+            if (product_info.variation_3) {
+                await page.click('[aria-label="' + product_info.variation_3 + '"]');
+                await page.waitForTimeout(delay(4000, 3000))
+                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 3: " + product_info.variation_3);
+            }
         }
+        // else {
+        //     console.log(moment().format("hh:mm:ss") + "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng");
+        //     update_error_data = {}
+        //     update_error_data.order_id = product.id
+        //     update_error_data.username = product.username
+        //     update_error_data.slave = product.slave
+        //     update_error_data.error_code = 2002
+        //     update_error_data.product_link = product.product_link
+        //     update_error_data.error_log = "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
+        //     await update_error(update_error_data, 4)
+        //     return 0
+        // }
 
         // chọn số lượng
         await page.click('input[role="spinbutton"]', { clickCount: 2 });
@@ -1233,7 +1272,7 @@ runAllTime = async () => {
 
     let get_data_shopee_url = ""
 
-    get_data_shopee_url = data_shopee_url + "?slave=" + slavenumber + "&token=kjdaklA190238190Adaduih2ajksdhakAhqiouOEJAK092489ahfjkwqAc92alA&&mode=" + mode
+    get_data_shopee_url = data_shopee_url + "?slave=" + slavenumber + "&token=kjdaklA190238190Adaduih2ajksdhakAhqiouOEJAK092489ahfjkwqAc92alA&&mode=" + mode + "&account_check=" + account_check + "&order_check=" + order_check
     console.log(get_data_shopee_url)
 
     // Lấy dữ liệu từ từ khoá từ sv
@@ -1411,6 +1450,7 @@ runAllTime = async () => {
         try {
 
             console.log(moment().format("hh:mm:ss") + " - Load: " + shopee_full_url)
+            console.log(moment().format("hh:mm:ss") + " - Check bắt đầu đặt đơn: " + check_order_complete)
             try {
                 await page.goto(shopee_full_url)
 
