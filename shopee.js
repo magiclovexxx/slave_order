@@ -269,29 +269,29 @@ update_order_status = async (url, cookie) => {
         let order_list_2 = await api.updateOrderStatus(order_list, 3)
         let order_list_3 = []
 
-        // if (order_list_2.length) {
-        //     order_list_2.forEach(async e => {
-        //         //   let x = await get_order_detail(url, e.shopee_order_id, cookie)
+        if (order_list_2.length) {
+            order_list_2.forEach(async e => {
+                //   let x = await get_order_detail(url, e.shopee_order_id, cookie)
 
-        //         if (x.pc_shipping) {
-        //             let a = {
-        //                 shopee_order_id: e.shopee_order_id,
-        //                 shopee_order_id_2: e.pc_processing_info.order_sn,
-        //                 shopee_tracking_number: x.pc_shipping.forder_shipping_info_list[0].tracking_number,
-        //             }
+                if (x.pc_shipping) {
+                    let a = {
+                        shopee_order_id: e.shopee_order_id,
+                        shopee_order_id_2: e.pc_processing_info.order_sn,
+                        shopee_tracking_number: x.pc_shipping.forder_shipping_info_list[0].tracking_number,
+                    }
 
-        //             if (a) {
-        //                 order_list_3.push(a)
-        //             }
-        //         }
+                    if (a) {
+                        order_list_3.push(a)
+                    }
+                }
 
-        //     })
+            })
 
-        //     if (order_list_2.length) {
-        //         //    let order_list_2 = await api.updateOrderStatus(order_list_3, 3)
-        //     }
+            if (order_list_2.length) {
+                //    let order_list_2 = await api.updateOrderStatus(order_list_3, 3)
+            }
 
-        // }
+        }
     } catch (error) {
         console.log(error)
     }
@@ -935,7 +935,7 @@ runAllTime = async () => {
                                     cookie1 = cookie1 + "; "
                                 }
                             })
-                            await update_order_status(shopee_country_url, cookie1)
+                        //    await update_order_status(shopee_country_url, cookie1)
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
