@@ -1,226 +1,483 @@
-const axios = require('axios').default;
-const puppeteer = require('puppeteer');
-const randomUseragent = require('random-useragent');
+const api = require('./update_to_server.js')
+const moment = require('moment')
 
-const check_slave_die = async(slave)=>{
-    let url = "http://api.hotaso.vn/api_user/check_slave?slave=" + slave
-    let check_slave = 1
-    await axios.get(url, {
-        timeout: 50000
-    })
-        .then(function (response) {
-           
-            check_slave = response.data
-            return check_slave
-        })
-        .catch(function (error) {
-            console.log(error);
-            return check_slave
-        })
-        .then(function () {
-            // always executed
-        });
-    return check_slave
+delay = (x, y) => {
+    a = Math.floor(Math.random() * (x - y)) + y;
+    return a
 }
 
-const thaTimCacSanPhamCuaShop = async (page, product_heart) => {
-    // Lấy tổng số trang sản phẩm của shop
-    let getProductPageTotal
+
+function sleep(ms) {
+    return new Promise((resolve) => {
+        setTimeout(resolve, ms);
+    });
+}
+
+remove_cart = async (page, product) => {
+
     try {
-        getProductPageTotal = await page.evaluate(() => {
-            // Class có link bài đăng trên profile          
-            let titles = document.querySelectorAll('.shopee-mini-page-controller__total')[0].textContent;
-            return titles
-        })
-    } catch {
-        getProductPageTotal = 1
+        await page.goto(product.shopee_country_url + "/cart")
+        await page.waitForSelector('.cart-page-logo__page-name')
+        await page.waitForTimeout(delay(6000, 4000))
+
+        let check_product_cart = await page.$x("//button[contains(text(), 'Delete')]");
+        let remove_order = check_product_cart.length - 1
+        console.log("Số đơn hàng cần xoá: " + remove_order)
+
+        if (remove_order > 0) {
+            for (let i = 0; i < remove_order; i++) {
+                await check_product_cart[i].click();
+                await page.waitForTimeout(delay(3000, 2000))
+            }
+        }
+
+    } catch (error) {
+        update_error_data = {}
+        update_error_data.order_id = product.id
+        update_error_data.username = product.username
+        update_error_data.slave = product.slave
+        update_error_data.product_link = product.product_link
+        update_error_data.error_message = error.message
+        update_error_data.error_code = 1008
+        update_error_data.error_log = "Lỗi hệ thống khi xoá sản phẩm trong giỏ hàng"
+        await api.update_error(update_error_data, 4)
+        console.log(error)
+        return 0
     }
+    return 1
 
-    if (getProductPageTotal >= 1) {
-        for (let i = 1; i <= getProductPageTotal; i++) {
-            let getProductList = []
-            danhSachSanPhamChuatuongTac = []
-            try {
-                getProductList = await page.evaluate(() => {
-                    //  
-                    let titles = document.querySelectorAll('[data-sqe="link"]');
-                    let imagess = document.querySelectorAll('img[width="invalid-value"]')
-                    let product_names = document.querySelectorAll('[data-sqe="name"]');
+}
 
-                    listProductLinks = []
-                    titles.forEach((item, index) => {
-                        let productids = item.href.split(".")
-                        let productId = {
-                            productId: productids[productids.length - 1],
-                            vitri: index,
-                            product_name: product_names[index].textContent,
-                            product_image: "", //imagess[index].src,
-                            product_link: item.href
-                        }
-                        listProductLinks.push(productId)
-                    })
-                    return listProductLinks
-                })
+action_add_cart = async (page, product) => {
 
-                //console.log(" ---- Danh sách sản phẩm của shop ----")
-                //console.log(getProductList)
-                //console.log(getProductList.length)
+    try {
+        let product_info = product.product_info
+        product_info = JSON.parse(product_info)
 
-                // Lấy danh sách các sản phẩm đã like
+        let product_models = product.product_models
+        let check_variation = 0
+        let variation = ""
+        console.log(product_info)
 
-                product_heart.action = "heart_product"
-                //console.log("Link: " + LinkdanhSachSanPhamChuaTuongTac)
-                let datatest = await axios.get(LinkdanhSachSanPhamChuaTuongTac, {
-                    params: {
-                        data: {
-                            dataToServer: product_heart,
-                        }
-                    }
-                })
+        if (product_info.color) {
+            product_info.variation_1 = product_info.color
+        }
+        if (product_info.size) {
+            product_info.variation_2 = product_info.size
+        }
+        if (product_info.variation_1 == "N/A" || product_info.color == "N/A") {
+            product_info.variation_1 = ""
+        }
+        if (product_info.variation_2 == "N/A" || product_info.size == "N/A") {
+            product_info.variation_2 = ""
+        }
+        if (product_info.variation_3 == "N/A") {
+            product_info.variation_3 = ""
+        }
 
-                danhSachSanPhamDaTuongTac = datatest.data
-                console.log(" ---- Danh sách sản phẩm đã tương tác ----")
-                console.log(danhSachSanPhamDaTuongTac.length)
-            } catch (error) {
-                console.log(error)
-                //console.log("Không gửi được dữ liệu thứ hạng mới đến master")
+        let variations = [product_info.variation_1, product_info.variation_2, product_info.variation_3]
+        variations.forEach((e, index) => {
+            if (e) {
+                if (index == 0) {
+                    variation = e
+                } else {
+                    variation = variation + "," + e
+                }
+            }
+        })
+
+
+        // if (product_info.color && product_info.size) {
+        //     variation_1 = product_info.color + "," + product_info.size
+
+
+        // } else if (!product_info.color && product_info.size) {
+        //     variation_1 = product_info.size
+        // } else if (product_info.color && !product_info.size) {
+        //     variation_1 = product_info.color
+        // }
+
+        console.log(moment().format("hh:mm:ss") + " -- Phân loại sản phẩm: " + variation);
+
+        if (product_models.length) {
+            product_models.forEach(e => {
+
+                if (e.name == variation && e.normal_stock > 0) {
+                    // còn hàng
+                    check_variation = 1
+                    console.log(moment().format("hh:mm:ss") + " -- " + variation + " còn sản phẩm ");
+                }
+            })
+        }
+
+        if (check_variation == 1) {
+            // Chọn màu
+            if (product_info.variation_1) {
+                await page.click('[aria-label="' + product_info.variation_1 + '"]');
+                await page.waitForTimeout(delay(4000, 3000))
+                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 1 :" + product_info.variation_1);
             }
 
-            // Danh sách sản phẩm chưa tương tác
-            //console.log(" ---- Danh sách sản phẩm ----")
-            //console.log(getProductList)
-            getProductList.forEach((item) => {
-                if (danhSachSanPhamDaTuongTac.length) {
-                    if (!danhSachSanPhamDaTuongTac.includes(item.productId)) {
-                        danhSachSanPhamChuatuongTac.push(item)
-                    }
-                } else {
-                    danhSachSanPhamChuatuongTac.push(item)
-                }
+            if (product_info.variation_2) {
+                await page.click('[aria-label="' + product_info.variation_2 + '"]');
+                await page.waitForTimeout(delay(4000, 3000))
+                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 2: " + product_info.variation_2);
+            }
 
+            if (product_info.variation_3) {
+                await page.click('[aria-label="' + product_info.variation_3 + '"]');
+                await page.waitForTimeout(delay(4000, 3000))
+                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 3: " + product_info.variation_3);
+            }
+        }
+        // else {
+        //     console.log(moment().format("hh:mm:ss") + "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng");
+        //     update_error_data = {}
+        //     update_error_data.order_id = product.id
+        //     update_error_data.username = product.username
+        //     update_error_data.slave = product.slave
+        //     update_error_data.error_code = 2002
+        //     update_error_data.product_link = product.product_link
+        //     update_error_data.error_log = "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
+        //     await api.update_error(update_error_data, 4)
+        //     return 0
+        // }
+
+        // chọn số lượng
+        await page.click('input[role="spinbutton"]', { clickCount: 2 });
+        await page.type('input[role="spinbutton"]', product_info.quantity)
+        console.log(moment().format("hh:mm:ss") + " Chọn Số lượng OK: " + product_info.quantity);
+
+        let check_btn_add_dard = await page.$$('.btn-tinted')
+
+        if (check_btn_add_dard.length > 1) {
+            await check_btn_add_dard[0].click();
+        }
+
+        check_error_add = await page.$x("//div[contains(text(), 'Please select product variation first')]")
+
+        if (check_error_add.length > 1) {
+            console.log(moment().format("hh:mm:ss") + " Lỗi khi chọn phân loại hàng, sai phân loại, biến thể");
+            update_error_data = {}
+            update_error_data.order_id = product.id
+            update_error_data.username = product.username
+            update_error_data.slave = product.slave
+            update_error_data.error_code = 1014
+            update_error_data.product_link = product.product_link
+            update_error_data.error_log = "Lỗi khi chọn phân loại hàng, sai phân loại, biến thể"
+            await api.update_error(update_error_data, 4)
+            return 0
+        }
+
+
+        return 1
+    } catch (error) {
+        update_error_data = {}
+        update_error_data.order_id = product.id
+        update_error_data.username = product.username
+        update_error_data.slave = product.slave
+        update_error_data.product_link = product.product_link
+        update_error_data.error_message = error.message
+        update_error_data.error_code = 1006
+        update_error_data.error_log = "Lỗi hệ thống khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
+        await api.update_error(update_error_data, 4)
+        console.log(error)
+        return 0
+    }
+
+}
+
+action_order = async (page, product) => {
+
+    try {
+        await page.goto(product.shopee_country_url + "/cart")
+        await page.waitForTimeout(delay(6000, 4000))
+        // Chọn sản phẩm đặt hàng
+
+        let products_1 = product.products_name
+        let voucher_1 = product.voucher
+        voucher_2 = ""
+        products_1.forEach(async e => {
+            console.log(e)
+            let check_1 = await page.$$('[title="' + e + '"]');
+            if (check_1.length) {
+                await page.evaluate((a) => {
+                    document.querySelectorAll('[title="' + a + '"]')[1].parentElement.parentElement.parentElement.parentElement.childNodes[0].children[0].click()
+                }, e)
+                await page.waitForTimeout(delay(3000, 1000))
+            }
+
+        })
+
+        update_error_data = {}
+        update_error_data.order_id = product.id
+        update_error_data.username = product.username
+        update_error_data.slave = product.slave
+        update_error_data.product_link = product.product_link
+
+        // await page.locator('text=Abaya Fashion Stripe Muslim Dress Women Long Sleeve Pocket Casual Robe DressesVa >> label div').click();
+        // await page.locator('text=Abaya Muslim Elegant Dress Plain Women Fashion Jubah Long Sleeve Belted DressesVa >> label div').click();
+        await page.keyboard.press("PageDown");
+
+        await page.waitForTimeout(delay(4000, 3000))
+        check_1 = await page.$$('.shopee-button-solid--primary')
+        if (check_1.length) {
+            await check_1[0].click()
+        }
+        //await page.waitForTimeout(8600)
+        await page.waitForSelector('.shopee-svg-icon.icon-voucher-line')
+        await page.waitForTimeout(delay(9000, 8000))
+
+        let check_select_item = await page.$$('.shopee-alert-popup__message')
+        if (check_select_item.length) {
+            //  await page.locator('text=You have not selected any items for checkout').click();
+
+            update_error_data.error_code = 1002
+            update_error_data.error_log = "Có lỗi hệ thống khi chọn sản phẩm"
+            console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi  chọn sản phẩm ");
+            await api.update_error(update_error_data, 4)
+            let result = {
+                code: 0,
+                voucher: ""
+            }
+            return result
+        }
+
+        // add voucher
+        if (voucher_1.length) {
+            console.log(moment().format("hh:mm:ss") + " -- Add voucher sản phẩm ");
+
+            let fee_ship_1 = 0
+            let fee_ships = await page.evaluate((x) => {
+                let fee_ship_2
+                document.querySelectorAll('div').forEach(e => {
+                    if (e.textContent == 'Shipping Option:') {
+                        a = e.parentElement.children[5].textContent
+                        fee_ship_2 = a
+                        console.log(a)
+                    }
+                })
+                return fee_ship_2
             })
 
-            console.log(" ---- Danh sách sản phẩm chưa tương tác ----")
-            console.log(danhSachSanPhamChuatuongTac.length)
-            if (danhSachSanPhamChuatuongTac.length > 2) {
-                break;
-            } else {
-                clickNext = await page.$('.shopee-svg-icon.icon-arrow-right')
-                if (clickNext) {
-                    await clickNext.click()
-                }
-            }
-        }
-    }
-    try {
-        if (danhSachSanPhamChuatuongTac.length) {
-            // Click like các sản phẩm chưa tương tác
-            let randomProduct = Math.floor(Math.random() * (15 - 10)) + 10;
-            let clickHearts = await page.$$('[viewBox="0 0 16 16"]')
-            for (let j = 1; j < randomProduct; j++) {
-                if (danhSachSanPhamChuatuongTac[j]) {
-                    await clickHearts[danhSachSanPhamChuatuongTac[j].vitri].click()
-                    product_heart.type = "like"
-                    product_heart.heart_product_id = danhSachSanPhamChuatuongTac[j].productId
-                    product_heart.heart_product_image = danhSachSanPhamChuatuongTac[j].product_image
-                    product_heart.heart_product_name = danhSachSanPhamChuatuongTac[j].product_name
-                    product_heart.heart_product_link = danhSachSanPhamChuatuongTac[j].product_link
+            await page.waitForTimeout(delay(4000, 3000))
 
-                    await updateAtions("heart_product", product_heart)
-                    timeout = Math.floor(Math.random() * (1500 - 1000)) + 1000;
-                    await page.waitForTimeout(timeout)
-
-                }
-            }
-        }
-    } catch (error) {
-
-        console.log(error)
-    }
-}
+            console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ships);
 
 
-const getproductByProductId = async (page, product, max_page) => {
-    console.log("------ Tìm kiếm vị trí từ khoá trên trang ------")
-    try {
-
-        let thuHangSanPham = {
-            trang: 0,
-            vitri: 0
-        }
-        if (product.urlSearch) {
-            await page.goto(urlSearch)
-            await page.waitForTimeout(4000)
-        }
-        await page.waitForTimeout(4000)
-        await page.on('response', async (resp) => {
-            var url = resp.url()
-            let checkUrl = url.split("search_items")
-
-            if (checkUrl.length > 1) {
-
-                let productInfo1 = await resp.json()
-                productInfo2 = productInfo1.items
-                
-                productInfo2.forEach((item, index) => {
-                    if ((item.itemid == product.product_id) && (item.ads_keyword == null)) {
-                        // tìm vị trí sản phẩm cần click
-
-                        thuHangSanPham = {
-
-                            vitri: index + 1
-                        }
+            // await page.waitForTimeout(999999)
+            if (product.country == "PH") {
+                if (fee_ships.length > 1) {
+                    let check_fee = fee_ships.split("₱")
+                    if (check_fee.length > 1) {
+                        fee_ship_1 = parseInt(check_fee[1])
                     }
-                })
-
-                //productForUser.product_image = productInfo2.image
-            }
-
-        });
-
-        // console.log("Tổng số trang kết quả tìm kiếm: " + getProductPageTotal)
-
-        console.log("Đang tìm sản phẩm trên trang: " + max_page)
-        max_page = max_page - 1
-
-        if (thuHangSanPham.vitri) {
-            let productPagess = await page.url()
-            productPagess = productPagess.split("page=")[1]
-            let product_page2 = parseInt(productPagess)
-            product_page2 = product_page2 + 1
-            thuHangSanPham.trang = product_page2
-
-            return thuHangSanPham;
-        } else {
-            if (max_page == 0) {
-                thuHangSanPham = {
-
-                    trang: 0,
-                    vitri: 0
                 }
-                return thuHangSanPham;
-            } else {
-                next = await page.$$('.shopee-icon-button--right')
-                if (next.length) {
-                    await next[0].click()
-                    timeout = Math.floor(Math.random() * (timemax - timemin)) + timemin;
-                    await page.waitForTimeout(timeout);
-                    product.urlSearch = ""
-                    return await getproductByProductId(page, product, max_page)
+            }
+            // const link = await fee_ships[i].$eval('a', a => a.getAttribute('href'));
+            //    console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ship_1);
+
+            if (fee_ship_1 == 0) {
+                //  await page.locator('text=You have not selected any items for checkout').click();
+
+                update_error_data.error_code = 1009
+                update_error_data.error_log = "Lỗi hệ thống không tìm thấy phí ship"
+                console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống không tìm thấy phí ship ");
+                await api.update_error(update_error_data, 4)
+                let result = {
+                    code: 0,
+                    voucher: ""
+                }
+                return result
+            }
+            // click select voucher
+            let select_voucher = await page.$x("//span[contains(text(), 'Select Voucher')]")
+
+            if (select_voucher.length) {
+                await select_voucher[0].click()
+                await page.waitForTimeout(delay(4000, 3000))
+
+                for (let y = 0; y < voucher_1.length; y++) {
+                    x = voucher_1[y]
+                    let p = parseInt(x.price)
+
+                    if (p == fee_ship_1) {
+                        console.log("--- Nhập code --")
+                        console.log(p + " -- " + x.code + " fee: " + fee_ship_1)
+                        await page.type('[placeholder="Shop voucher code"]', x.code)
+                        voucher_2 = x.code
+                        break
+                    }
+                }
+
+                let apply = await page.$x("//span[contains(text(), 'Apply')]")
+
+                let check_voucher_3 = await page.$$(".input-with-validator__error-message")
+
+                if (check_voucher_3.length) {
+                    update_error_data.error_code = 2001
+                    update_error_data.error_log = "Lỗi voucher " + x.code + " Không đúng"
+                    console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " Không đúng");
+                    await api.update_error(update_error_data, 4)
+                    let result = {
+                        code: 0,
+                        voucher: voucher_2
+                    }
+                    return result
+                }
+
+                if (apply.length) {
+                    await apply[0].click()
+                    await page.waitForTimeout(delay(4000, 3000))
+                    let check_voucher_expỉed = await page.$x("//div[contains(text(), 'Sorry, this voucher has expired.')]")
+                    if (check_voucher_expỉed.length) {
+                        update_error_data.error_code = 2001
+                        update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn"
+                        console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn");
+                        await api.update_error(update_error_data, 4)
+                        let result = {
+                            code: 0,
+                            voucher: ""
+                        }
+                        return result
+                    }
+
+                    check_voucher_expỉed = await page.$x("//div[contains(text(), 'You have redeemed this voucher before.')]")
+                    if (check_voucher_expỉed.length) {
+                        update_error_data.error_code = 2011
+                        update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng"
+                        console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng");
+                        await api.update_error(update_error_data, 4)
+
+                        let result = {
+                            code: 0,
+                            voucher: voucher_2
+                        }
+                        return result
+                    }
                 }
             }
         }
 
+        let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
+
+        if (check_not_support_shiping.length) {
+
+            update_error_data.error_code = 2012
+            update_error_data.error_log = "Lỗi địa chỉ không hỗ trợ ship"
+            console.log(moment().format("hh:mm:ss") + " -- Lỗi địa chỉ không hỗ trợ ship ");
+            await api.update_error(update_error_data, 4)
+            let result = {
+                code: 0,
+                voucher: ""
+            }
+            return result
+        }
+
+        await page.waitForTimeout(delay(4000, 3000))
+        await page.keyboard.press("PageDown");
+        await page.waitForTimeout(delay(4000, 3000))
+
+        let check_btn_cod = await page.$$('[aria-label="Cash on Delivery"]')
+
+        if (check_btn_cod.length > 0) {
+            await check_btn_cod[0].click()
+            await page.waitForTimeout(delay(5000, 4000))
+        } else {
+            check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery')]")
+        }
+
+        if (check_btn_cod.length) {
+            console.log(moment().format("hh:mm:ss") + " -- Click nút đặt đơn: ");
+            let checkout = await page.$$('.stardust-button--primary')
+            if (checkout.length) {
+                await checkout[0].click()
+            }
+            await page.waitForTimeout(delay(3000, 2000))
+            // await page.waitForTimeout(9999999)
+
+            let check_account_suppen = await page.$x("//p[contains(text(), 'Action Failed (A02): Your account has been suspended as our system detected a suspicious behaviour of mass creation of accounts. Please make sure to comply with Shopee policies.')]")
+
+            let check_account_limit = await page.$x("//div[contains(text(), 'Sorry, you have reached the Cash on Delivery order limit.')]")
+
+            if (check_account_suppen.length || check_account_limit.length) {
+
+                if (check_account_limit.length) {
+                    update_error_data.error_code = 2006
+                    update_error_data.error_log = "Tài khoản limit"
+                    console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị limit: " + product.username);
+
+                }
+
+                if (check_account_suppen.length) {
+                    update_error_data.error_code = 2005
+                    update_error_data.error_log = "Tài khoản bị khoá"
+                    console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị khoá: " + product.username);
+
+                }
+
+                await api.update_error(update_error_data, 4)
+                let result = {
+                    code: 0,
+                    voucher: ""
+                }
+                return result
+            }
+        } else {
+
+            update_error_data.error_code = 1003
+            update_error_data.error_log = "Không tìm thấy nút mua hàng, Địa chỉ không đúng, vui lòng kiểm tra lại"
+            console.log(moment().format("hh:mm:ss") + " -- Không tìm thấy nút mua hàng, Địa chỉ không đúng, vui lòng kiểm tra lại");
+            await api.update_error(update_error_data, 4)
+            let result = {
+                code: 0,
+                voucher: ""
+            }
+            return result
+        }
     } catch (error) {
+
+        update_error_data = {}
+        update_error_data.order_id = product.id
+        update_error_data.username = product.username
+        update_error_data.slave = product.slave
+        update_error_data.product_link = product.product_link
+        update_error_data.error_code = 1004
+        update_error_data.error_message = error.message
+        update_error_data.error_log = "Có lỗi hệ thống khi đặt hàng"
         console.log(error)
-        return false
+
+        console.log("Check đặt đơn khi gặp lỗi: " + check_order_complete)
+
+        if (check_order_complete == true) {
+            let result = {
+                code: 1,
+                voucher: ""
+            }
+            return result
+        } else {
+            await api.update_error(update_error_data, 4)
+            let result = {
+                code: 0,
+                voucher: ""
+            }
+            return result
+        }
+
     }
+    let result = {
+        code: 1,
+        voucher: voucher_2
+    }
+
+    return result
+
 }
 
 module.exports = {
 
-    thaTimCacSanPhamCuaShop,
-    getproductByProductId,
-    check_slave_die
-
+    remove_cart,
+    action_add_cart,
+    action_order,
+    
 }

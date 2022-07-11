@@ -1,124 +1,6 @@
 const axios = require('axios').default;
-const HttpsProxyAgent = require('https-proxy-agent');
-const md5 = require('md5');
+const moment = require('moment')
 
-
-
-
-followShop = async (cookies, ref, shopId) => {
-    let cookie1 = ""
-    let result
-    cookies.forEach((row, index) => {
-        cookie1 = cookie1 + row.name + "=" + row.value
-        if (index != (cookies.length - 1)) {
-            cookie1 = cookie1 + "; "
-        }
-
-    })
-
-    var data = JSON.stringify({ "shopid": shopId });
-
-    var config = {
-        method: 'post',
-        url: 'https://shopee.vn/api/v4/shop/follow',
-        timeout: 5000,
-        headers: {
-            'content-type': 'application/json',
-            'referer': ref,
-            'cookie': cookie1
-        },
-        data: data
-    };
-
-    await axios(config)
-        .then(function (response) {
-            console.log("--- follow shop API Thành công ---");
-            //console.log(response.data);
-            result = response.data
-        })
-        .catch(function (error) {
-            console.log("--- Lỗi API follow ---");
-        });
-    return result
-
-}
-
-get_order_list = async (cookies, ref, order_info) => {
-    let cookie1 = ""
-    let result
-    cookies.forEach((row, index) => {
-        cookie1 = cookie1 + row.name + "=" + row.value
-        if (index != (cookies.length - 1)) {
-            cookie1 = cookie1 + "; "
-        }
-
-    })
-
-    var data = JSON.stringify({ "shopid": shopId });
-
-    var config = {
-        method: 'post',
-        url: 'https://shopee.vn/api/v4/shop/follow',
-        timeout: 5000,
-        headers: {
-            'content-type': 'application/json',
-            'referer': ref,
-            'cookie': cookie1
-        },
-        data: data
-    };
-
-    await axios(config)
-        .then(function (response) {
-            console.log("--- follow shop API Thành công ---");
-            //console.log(response.data);
-            result = response.data
-        })
-        .catch(function (error) {
-            console.log("--- Lỗi API follow ---");
-        });
-    return result
-
-}
-
-
-order_product = async (cookies, ref, order_info) => {
-    let cookie1 = ""
-    let result
-    cookies.forEach((row, index) => {
-        cookie1 = cookie1 + row.name + "=" + row.value
-        if (index != (cookies.length - 1)) {
-            cookie1 = cookie1 + "; "
-        }
-
-    })
-
-    var data = JSON.stringify({ "shopid": shopId });
-
-    var config = {
-        method: 'post',
-        url: 'https://shopee.vn/api/v4/shop/follow',
-        timeout: 5000,
-        headers: {
-            'content-type': 'application/json',
-            'referer': ref,
-            'cookie': cookie1
-        },
-        data: data
-    };
-
-    await axios(config)
-        .then(function (response) {
-            console.log("--- follow shop API Thành công ---");
-            //console.log(response.data);
-            result = response.data
-        })
-        .catch(function (error) {
-            console.log("--- Lỗi API follow ---");
-        });
-    return result
-
-}
 function csrftoken() {
     karakter = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
     PanjangKarakter = karakter.length;
@@ -130,152 +12,144 @@ function csrftoken() {
     return acakString;
 }
 
-thaTimSanPham = async (cookies, ref, shopId, productId) => {
-    let result
-    var xtoken = csrftoken()
-    let cookie1 = ""
 
-    cookies.forEach(row => {
-        if (row.name == "csrftoken") {
-            cookie1 = cookie1 + row.name + "=" + xtoken + ";"
-        } else {
-            cookie1 = cookie1 + row.name + "=" + row.value + ";"
-        }
-
-    })
-    // console.log (cookie1) 
-    // console.log ( "--" + shopId) 
-    // console.log ("--" + productId) 
-    // console.log ("--" + ref) 
-
-    //var data = JSON.stringify({ "shopid": shopId });
-    let url = "https://shopee.vn/api/v4/pages/like_items"
-    let data = { "shop_item_ids": [{ "shop_id": parseInt(shopId), "item_id": parseInt(productId) }] }
-    //data = JSON.stringify(data);
+get_order_detail = async (url, order_id, cookie) => {
+    console.log(moment().format("hh:mm:ss") + " --- Lấy chi tiết đơn hàng: " + order_id)
     var config = {
-        method: 'post',
-        url: url,
-        timeout: 5000,
+        method: 'get',
+        url: url + '/api/v4/order/get_order_detail?order_id=' + order_id,
         headers: {
-            'x-csrftoken': xtoken,
-            'referer': ref,
-            'cookie': cookie1
-        },
-        data: data
-    };
 
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'cookie': cookie,
+            // 'if-none-match-': '55b03-8fd0a76ee0982adcd4ce2ff509c658ef',
+            'referer': url + '/user/purchase/order/' + order_id + '?type=8',
+            'sec-ch-ua': '".Not/A)Brand";v="99", "Google Chrome";v="103", "Chromium";v="103"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'x-api-source': 'pc',
+            'x-requested-with': 'XMLHttpRequest',
+            'x-shopee-language': 'en'
+        }
+    };
+    order_detail = []
     await axios(config)
         .then(function (response) {
-            console.log("--- Thả tim sản phẩm API Thành công ---");
-            //console.log(response.data);
-            result = response.data
-        })
-        .catch(function (error) {
-            console.log("--- Lỗi Thả tim sản phẩm API ---");
-        });
-    return result
+            if (response.data.data) {
+                order_detail = response.data.data
+            }
 
-}
-
-review_order = async (cookies, shopee_feed, proxy) => {
-
-    let mentions = []
-    let hashtags = []
-
-    if (shopee_feed.feed_mention) {
-        mentions = shopee_feed.feed_mention
-    }
-
-    if (shopee_feed.feed_hashtag) {
-        hashtags = shopee_feed.feed_hashtag
-    }
-
-    let feed_content = shopee_feed.feed_content
-    let feed_link = shopee_feed.feed_link
-    let result
-    var xtoken = csrftoken()
-    let cookie1 = ""
-
-    let proxy_pass = proxy.proxy_password.split("\r")[0]
-
-    var httpsAgent = new HttpsProxyAgent({ host: proxy.proxy_ip, port: proxy.proxy_port, auth: proxy.proxy_username + ":" + proxy_pass })
-
-    cookies.forEach(row => {
-        if (row.name == "csrftoken") {
-            cookie1 = cookie1 + row.name + "=" + xtoken + ";"
-        } else {
-            cookie1 = cookie1 + row.name + "=" + row.value + ";"
-        }
-
-    })
-
-    let icons = ['🙏', '💖', '😊', '😘', '😇', '👍', '🌺', '😀', '😃', '😄', '😁', '😆', '😅', '😂', '🤣', '😇', '😉', '😊', '🙂', '🙃', '😋', '😌', '😍', '🥰', '😘', '😗', '😙', '😚', '🤪', '😜', '😝', '😛', '🤑', '😎', '🤓', '🧐',
-    '🤠', '🥳', '🤡', '😏', '😶','😐', '😑', '😒', '🙄', '🤨', '🤔', '🤫', '🤭',  '🤗', '🤥', '😳', '😞', '😟', '😤', '😠', '😔', '😕', '🙁', '😬', '🥺', '😣', '😖', '😫', '😩', '🥱', '😮', '😮', '😓',
-    '😯', '😦', '😧', '😢', '🤤', '🤩', '😵', '😵', '🥴', '😲', '🤐', '😷', '🤕', '🤒', '🤧', '😶', '😴', '😺',
-    '😸', '😹', '😻', '😼', '😽', '🙀', '😿', '😾', '🙌', '👏', '🙏', '🤝', '👍', '👎', '👊', '✊', '🤛', '🤜', '🤞', '✌']
-
-    let so_luong_icon = Math.floor(Math.random() * 5)
-
-    feed_link = decodeURIComponent(feed_link)
-    let feed_array = feed_link.split("/")
-    let feed_id = feed_array[feed_array.length - 1]
-    let message = feed_content
-
-    for (let a = 0; a < so_luong_icon; a++) {
-        let random_icon = Math.floor(Math.random() * (icons.length - 1));
-        message = message + " " + icons[random_icon]
-    }
-
-    if (mentions.length > 0) {
-        for (let b = 0; b < mentions.length; b++) {
-            message += " @" + mentions[b]
-        }
-    }
-
-
-    let url = "https://feeds.shopee.vn/api/proxy/comment"
-    let data = { "feed_id": feed_id, "comment": message, "mentions": [], "hashtags": hashtags_1 }
-    console.log(data)
-
-    var config = {
-        method: 'post',
-        url: url,
-        timeout: 5000,
-        headers: {
-            'x-csrftoken': xtoken,
-            'host': "feeds.shopee.vn",
-            'language': "vi",
-            'user-agent': "language=vi app_type=1",
-            'cookie': cookie1,
-            'accept': 'application/json, text/plain, */*',
-            'content-type': 'application/json',
-        },
-        httpsAgent: httpsAgent,
-        //proxy: false,
-        data: data
-    };
-    
-    await axios(config)
-        .then(function (response) {
-            result = response.data
-            console.log("Comment feed: " + feed_link + " --- " + result.msg);
-           
         })
         .catch(function (error) {
             console.log(error);
         });
-    return result
 
+    return order_detail
 }
 
+get_all_order_list = async (url, cookie, limit, offset) => {
+    url = url + '/api/v4/order/get_all_order_and_checkout_list?limit=' + limit + '&offset=' + offset
+   
+    var config = {
+        method: 'get',
+        url: url,
+        headers: {
+            // 'authority': 'shopee.vn',
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'cache-control': 'no-cache',
+            'cookie': cookie,
+            // 'if-none-match-': '55b03-429b3f5312c1f66cbdca7386aa61e9bd', 
+            'pragma': 'no-cache',
+            'referer': url + '/user/purchase/list/?type=9',
 
+            'sec-ch-ua-mobile': '?0',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'x-api-source': 'pc',
+            'x-requested-with': 'XMLHttpRequest',
+            'x-shopee-language': 'en'
+        }
+    };
+    data = []
+    order_id_list = []
+    await axios(config)
+        .then(function (response) {
+            data = response.data
+            if (data.data.order_data.details_list) {
+                let details_list = data.data.order_data.details_list
+                console.log("Kết quả shopee detail_list: " + details_list.length);
+                details_list.forEach(e => {
+                    let x = {
+                        shopee_order_id: e.info_card.order_id,
+                        status: e.status.status_label.text
+                    }
+                    order_id_list.push(x)
+                })
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+    
+    return order_id_list
+}
+
+get_order_list_by_status = async (url, cookie, list_type, limit, offset) => {
+
+    var config = {
+        method: 'get',
+        url: url + '/api/v4/order/get_order_list?limit=' + limit + '&list_type=' + list_type + '&offset=' + offset,
+        headers: {
+            // 'authority': 'shopee.vn',
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'cache-control': 'no-cache',
+            'cookie': cookie,
+            // 'if-none-match-': '55b03-429b3f5312c1f66cbdca7386aa61e9bd', 
+            'pragma': 'no-cache',
+            'referer': url + '/user/purchase/list/?type=9',
+
+            'sec-ch-ua-mobile': '?0',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'x-api-source': 'pc',
+            'x-requested-with': 'XMLHttpRequest',
+            'x-shopee-language': 'en'
+        }
+    };
+    data = []
+    order_id_list = []
+    await axios(config)
+        .then(function (response) {
+            data = response.data
+            if (data.data.details_list) {
+                let details_list = data.data.details_list
+                details_list.forEach(e => {
+                    let x = {
+                        order_id: e.info_card.order_id,
+                        status: e.status.status_label.text
+                    }
+                    order_id_list.push(x)
+                })
+            }
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+
+    return order_id_list
+}
 
 module.exports = {
 
-    // timViTriTrangSanPhamTheoTuKhoa,
-    // thaTimSanPham,
-    order_product,
-   
-    review_order
+    get_order_detail,
+    get_all_order_list,
+    get_order_list_by_status,
 
 }

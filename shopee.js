@@ -1,7 +1,8 @@
 require('dotenv').config();
 var fs = require('fs');
 const shopeeApi = require('./src/shopeeApi.js')
-const actionsShopee = require('./src/actions.js')
+const api = require('./src/update_to_server.js')
+const actionShopee = require('./src/actions.js')
 const axios = require('axios').default;
 const moment = require('moment')
 var FormData = require('form-data');
@@ -13,6 +14,7 @@ var shell = require('shelljs');
 const { preparePageForTests } = require('./src/bypass');
 var ip_address = require("ip");
 const preloadFile = fs.readFileSync('./preload.js', 'utf8');
+
 // ["chrome.runtime", "navigator.languages"].forEach(a =>
 //     StealthPlugin.enabledEvasions.delete(a)
 // )
@@ -21,6 +23,7 @@ puppeteer.use(StealthPlugin())
 slavenumber = process.env.SLAVE
 account_check = process.env.ACCOUNT
 order_check = process.env.ORDER_ID
+pending_check = process.env.PENDING
 
 chromiumDir = process.env.CHROMIUM_DIR                     // Đường dẫn thư mục chromium sẽ khởi chạy
 let profileDir = process.env.PROFILE_DIR
@@ -43,30 +46,6 @@ console.log("headless_mode: " + headless_mode + " --- OS SLAVE:" + os_slave)
 // Danh sách profile facebook trong mỗi slave
 mode = process.env.MODE
 
-if (mode === "DEV") {
-    apiUrl = "http://beta.aos.asia"
-    updateActionsUrl = "https://beta.aos.asia"
-
-
-} else {
-    apiUrl = "http://api.aos.asia"
-    apiServer = "http://history.aos.asia:4000"
-    updateActionsUrl = "https://api.aos.asia"
-}
-
-shopee_account_update_url = apiUrl + "/api_user/shopeeAccountUpdate" // Link update account shopee status
-data_shopee_url = apiUrl + "/api_user/dataShopee"     // Link shopee update thứ hạng sản phẩm
-shopee_update_seo_san_pham_url = apiUrl + "/api_user/shopeeUpdateSeoSanPham"     // Link shopee update seo sản phẩm
-
-update_actions_url = updateActionsUrl + "/api_user/update_action"     // Update actions
-update_error_url = updateActionsUrl + "/api_user/update_error"     // Update error
-update_cookie_url = updateActionsUrl + "/api_user/update_cookie"     // Update cookie
-update_point_url = updateActionsUrl + "/api_user/update_point"     // Update actions
-update_history_url = updateActionsUrl + "/api_user/update_history"     // Update history
-
-getSlaveAccountDir = apiUrl + "/api_user/getSlaveAccount"     // Lay tai khoan shopee cho slave
-getSlaveInfo = apiUrl + "/api_user/getSlaveInfo"     // Lay thong tin cau hinh slave
-
 
 if (mode === "DEV") {
     timemax = 3000;
@@ -88,40 +67,6 @@ add_address = async (page, product, cookies) => {
         let address_account_url = product.shopee_country_url + "/user/account/address"
 
 
-        // // get address list
-        // let address_list = await apiRequestContext.get(get_address_url)
-
-        // let address_list_1 = await address_list.json();
-
-        // if (address_list_1.data.addresses) {
-        //     console.log("số địa chỉ hiện có qua api: " + address_list_1.data.addresses.length)
-        // } else {
-        //     console.log("số địa chỉ hiện có qua api: " + 0)
-        // }
-
-
-        // if (address_list_1.data.addresses.length) {
-        //     address_list_1 = address_list_1.data.addresses
-
-        //     console.log(moment().format("hh:mm:ss") + " -- Xoá địa chỉ cũ");
-        //     for (let a = (address_list_1.length-1) ; a >=0 ; a--) {
-        //         let add = address_list_1[a]
-
-        //         let delete_address_url = product.shopee_country_url + "/api/v4/account/address/delete_user_address/"
-        //         let delete_address = await apiRequestContext.post(delete_address_url, {
-        //             data: {
-        //                 address_id: add.id
-        //             }
-        //         }
-        //         )
-        //         if (delete_address.status() != 200) {
-        //             console.log('Lỗi không thể xoá địa chỉ', delete_address.status());
-        //             return;
-        //         }
-        //     }
-
-        //     console.log(moment().format("hh:mm:ss") + " -- Xoá địa chỉ cũ ok");
-        // }
         await page.waitForTimeout(delay(6000, 4000))
         await page.goto(address_account_url)
         await page.waitForTimeout(delay(6000, 4000))
@@ -167,8 +112,6 @@ add_address = async (page, product, cookies) => {
         let phone_country = ""
         let zipcode = ""
 
-
-
         data.append('name', product.rec_name);
         data.append('icno', '');
         data.append('country', address_data.country);
@@ -200,22 +143,6 @@ add_address = async (page, product, cookies) => {
         data.append('address_instruction', '');
         data.append('place', 'DO_NOT_CHANGE__I_AM_MAGIC');
         data.append('add_only', 'false');
-
-        // data.append('name', product.rec_name);
-        // data.append('phone', product.rec_phone)
-        // data.append('icno', '');
-        // data.append('country', address_data.country);
-        // data.append('state', address_data.city);
-        // data.append('city', 'Kinta');
-        // data.append('district', 'Ulu Kinta');
-        // data.append('town', 'Ipoh');
-        // data.append('address', '116h, Jalan Kampar, 30250');
-        // data.append('zipcode', '30250');
-        // data.append('set_default', '1');
-        // data.append('place', 'DO_NOT_CHANGE__I_AM_MAGIC');
-        // data.append('add_only', 'false');
-
-        //  console.log(data)
 
         var config = {
             method: 'post',
@@ -313,7 +240,7 @@ add_address = async (page, product, cookies) => {
             update_error_data.product_link = product.product_link
             update_error_data.error_log = "Thông tin địa chỉ hoặc số điện thoại không đúng, vui lòng kiểm tra lại"
             console.log(moment().format("hh:mm:ss") + " -- Địa chỉ hoặc số điện thoại không đúng ");
-            await update_error(update_error_data, 4)
+            await api.update_error(update_error_data, 4)
             return 0
         }
     } catch (error) {
@@ -327,470 +254,47 @@ add_address = async (page, product, cookies) => {
         update_error_data.error_log = "Có lỗi hệ thống khi thêm địa chỉ, vui lòng kiểm tra lại"
         console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi thêm địa chỉ ");
         console.log(error)
-        await update_error(update_error_data, 4)
+        await api.update_error(update_error_data, 4)
         return 0
     }
 }
 
-
-action_order = async (page, product) => {
-
+update_order_status = async (url, cookie) => {
     try {
-        await page.goto(product.shopee_country_url + "/cart")
-        await page.waitForTimeout(delay(6000, 4000))
-        // Chọn sản phẩm đặt hàng
+        console.log(moment().format("hh:mm:ss") + " -- update_order_status --");
+        // Lấy thông tin 20 đơn hàng đầU
+        let order_list = await shopeeApi.get_all_order_list(url, cookie, 20, 0)
+        console.log(" ORder list: " + order_list.length)
+        // update và check trạng thái đơn hàng trên sv xem đã có tracking_number chưa
+        let order_list_2 = await api.updateOrderStatus(order_list, 3)
+        let order_list_3 = []
 
-        let products_1 = product.products_name
-        let voucher_1 = product.voucher
-        voucher_2 = ""
-        products_1.forEach(async e => {
-            console.log(e)
-            let check_1 = await page.$$('[title="' + e + '"]');
-            if (check_1.length) {
-                await page.evaluate((a) => {
-                    document.querySelectorAll('[title="' + a + '"]')[1].parentElement.parentElement.parentElement.parentElement.childNodes[0].children[0].click()
-                }, e)
-                await page.waitForTimeout(delay(3000, 1000))
-            }
+        // if (order_list_2.length) {
+        //     order_list_2.forEach(async e => {
+        //         //   let x = await get_order_detail(url, e.shopee_order_id, cookie)
 
-        })
+        //         if (x.pc_shipping) {
+        //             let a = {
+        //                 shopee_order_id: e.shopee_order_id,
+        //                 shopee_order_id_2: e.pc_processing_info.order_sn,
+        //                 shopee_tracking_number: x.pc_shipping.forder_shipping_info_list[0].tracking_number,
+        //             }
 
-        update_error_data = {}
-        update_error_data.order_id = product.id
-        update_error_data.username = product.username
-        update_error_data.slave = product.slave
-        update_error_data.product_link = product.product_link
+        //             if (a) {
+        //                 order_list_3.push(a)
+        //             }
+        //         }
 
-        // await page.locator('text=Abaya Fashion Stripe Muslim Dress Women Long Sleeve Pocket Casual Robe DressesVa >> label div').click();
-        // await page.locator('text=Abaya Muslim Elegant Dress Plain Women Fashion Jubah Long Sleeve Belted DressesVa >> label div').click();
-        await page.keyboard.press("PageDown");
+        //     })
 
-        await page.waitForTimeout(delay(4000, 3000))
-        check_1 = await page.$$('.shopee-button-solid--primary')
-        if (check_1.length) {
-            await check_1[0].click()
-        }
-        //await page.waitForTimeout(8600)
-        await page.waitForSelector('.shopee-svg-icon.icon-voucher-line')
-        await page.waitForTimeout(delay(9000, 8000))
+        //     if (order_list_2.length) {
+        //         //    let order_list_2 = await api.updateOrderStatus(order_list_3, 3)
+        //     }
 
-        let check_select_item = await page.$$('.shopee-alert-popup__message')
-        if (check_select_item.length) {
-            //  await page.locator('text=You have not selected any items for checkout').click();
-
-            update_error_data.error_code = 1002
-            update_error_data.error_log = "Có lỗi hệ thống khi chọn sản phẩm"
-            console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi  chọn sản phẩm ");
-            await update_error(update_error_data, 4)
-            let result = {
-                code: 0,
-                voucher: ""
-            }
-            return result
-        }
-
-        // add voucher
-        if (voucher_1.length) {
-            console.log(moment().format("hh:mm:ss") + " -- Add voucher sản phẩm ");
-
-            let fee_ship_1 = 0
-            let fee_ships = await page.evaluate((x) => {
-                let fee_ship_2
-                document.querySelectorAll('div').forEach(e => {
-                    if (e.textContent == 'Shipping Option:') {
-                        a = e.parentElement.children[5].textContent
-                        fee_ship_2 = a
-                        console.log(a)
-                    }
-                })
-                return fee_ship_2
-            })
-
-            await page.waitForTimeout(delay(4000, 3000))
-
-            console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ships);
-
-
-            // await page.waitForTimeout(999999)
-            if (product.country == "PH") {
-                if (fee_ships.length > 1) {
-                    let check_fee = fee_ships.split("₱")
-                    if (check_fee.length > 1) {
-                        fee_ship_1 = parseInt(check_fee[1])
-                    }
-                }
-            }
-            // const link = await fee_ships[i].$eval('a', a => a.getAttribute('href'));
-            //    console.log(moment().format("hh:mm:ss") + " -- Fee Ship: " + fee_ship_1);
-
-            if (fee_ship_1 == 0) {
-                //  await page.locator('text=You have not selected any items for checkout').click();
-
-                update_error_data.error_code = 1009
-                update_error_data.error_log = "Lỗi hệ thống không tìm thấy phí ship"
-                console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống không tìm thấy phí ship ");
-                await update_error(update_error_data, 4)
-                let result = {
-                    code: 0,
-                    voucher: ""
-                }
-                return result
-            }
-            // click select voucher
-            let select_voucher = await page.$x("//span[contains(text(), 'Select Voucher')]")
-
-            if (select_voucher.length) {
-                await select_voucher[0].click()
-                await page.waitForTimeout(delay(4000, 3000))
-
-                for (let y = 0; y < voucher_1.length; y++) {
-                    x = voucher_1[y]
-                    let p = parseInt(x.price)
-
-                    if (p == fee_ship_1) {
-                        console.log("--- Nhập code --")
-                        console.log(p + " -- " + x.code + " fee: " + fee_ship_1)
-                        await page.type('[placeholder="Shop voucher code"]', x.code)
-                        voucher_2 = x.code
-                        break
-                    }
-                }
-
-                let apply = await page.$x("//span[contains(text(), 'Apply')]")
-
-                let check_voucher_3 = await page.$$(".input-with-validator__error-message")
-
-                if (check_voucher_3.length) {
-                    update_error_data.error_code = 2001
-                    update_error_data.error_log = "Lỗi voucher " + x.code + " Không đúng"
-                    console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " Không đúng");
-                    await update_error(update_error_data, 4)
-                    let result = {
-                        code: 0,
-                        voucher: voucher_2
-                    }
-                    return result
-                }
-
-                if (apply.length) {
-                    await apply[0].click()
-                    await page.waitForTimeout(delay(4000, 3000))
-                    let check_voucher_expỉed = await page.$x("//div[contains(text(), 'Sorry, this voucher has expired.')]")
-                    if (check_voucher_expỉed.length) {
-                        update_error_data.error_code = 2001
-                        update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn"
-                        console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn");
-                        await update_error(update_error_data, 4)
-                        let result = {
-                            code: 0,
-                            voucher: ""
-                        }
-                        return result
-                    }
-
-                    check_voucher_expỉed = await page.$x("//div[contains(text(), 'You have redeemed this voucher before.')]")
-                    if (check_voucher_expỉed.length) {
-                        update_error_data.error_code = 2011
-                        update_error_data.error_log = "Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng"
-                        console.log(moment().format("hh:mm:ss") + " -- Lỗi voucher " + x.code + " hết hạn cho tài khoản đặt hàng");
-                        await update_error(update_error_data, 4)
-
-                        let result = {
-                            code: 0,
-                            voucher: voucher_2
-                        }
-                        return result
-                    }
-                }
-            }
-        }
-
-        let check_not_support_shiping = await page.$x("//span[contains(text(), 'This product does not support the selected shipping option.')]")
-
-        if (check_not_support_shiping.length) {
-
-            update_error_data.error_code = 2012
-            update_error_data.error_log = "Lỗi địa chỉ không hỗ trợ ship"
-            console.log(moment().format("hh:mm:ss") + " -- Lỗi địa chỉ không hỗ trợ ship ");
-            await update_error(update_error_data, 4)
-            let result = {
-                code: 0,
-                voucher: ""
-            }
-            return result
-        }
-
-        await page.waitForTimeout(delay(4000, 3000))
-        await page.keyboard.press("PageDown");
-        await page.waitForTimeout(delay(4000, 3000))
-
-        let check_btn_cod = await page.$$('[aria-label="Cash on Delivery"]')
-
-        if (check_btn_cod.length > 0) {
-            await check_btn_cod[0].click()
-            await page.waitForTimeout(delay(5000, 4000))
-        } else {
-            check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery')]")
-        }
-
-        if (check_btn_cod.length) {
-            console.log(moment().format("hh:mm:ss") + " -- Click nút đặt đơn: ");
-            let checkout = await page.$$('.stardust-button--primary')
-            if (checkout.length) {
-                await checkout[0].click()
-            }
-            await page.waitForTimeout(delay(3000, 2000))
-           // await page.waitForTimeout(9999999)
-
-            let check_account_suppen = await page.$x("//p[contains(text(), 'Action Failed (A02): Your account has been suspended as our system detected a suspicious behaviour of mass creation of accounts. Please make sure to comply with Shopee policies.')]")
-
-            let check_account_limit = await page.$x("//div[contains(text(), 'Sorry, you have reached the Cash on Delivery order limit.')]")
-
-            if (check_account_suppen.length || check_account_limit.length) {
-
-                if (check_account_limit.length) {
-                    update_error_data.error_code = 2006
-                    update_error_data.error_log = "Tài khoản limit"
-                    console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị limit: " + product.username);
-
-                }
-
-                if (check_account_suppen.length) {
-                    update_error_data.error_code = 2005
-                    update_error_data.error_log = "Tài khoản bị khoá"
-                    console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị khoá: " + product.username);
-
-                }
-
-                await update_error(update_error_data, 4)
-                let result = {
-                    code: 0,
-                    voucher: ""
-                }
-                return result
-            }
-        } else {
-
-            update_error_data.error_code = 1003
-            update_error_data.error_log = "Không tìm thấy nút mua hàng, Địa chỉ không đúng, vui lòng kiểm tra lại"
-            console.log(moment().format("hh:mm:ss") + " -- Không tìm thấy nút mua hàng, Địa chỉ không đúng, vui lòng kiểm tra lại");
-            await update_error(update_error_data, 4)
-            let result = {
-                code: 0,
-                voucher: ""
-            }
-            return result
-        }
-    } catch (error) {
-
-        update_error_data = {}
-        update_error_data.order_id = product.id
-        update_error_data.username = product.username
-        update_error_data.slave = product.slave
-        update_error_data.product_link = product.product_link
-        update_error_data.error_code = 1004
-        update_error_data.error_message = error.message
-        update_error_data.error_log = "Có lỗi hệ thống khi đặt hàng"
-        console.log(error)
-
-        console.log("Check đặt đơn khi gặp lỗi: " + check_order_complete)
-
-        if (check_order_complete == true) {
-            let result = {
-                code: 1,
-                voucher: ""
-            }
-            return result
-        } else {
-            await update_error(update_error_data, 4)
-            let result = {
-                code: 0,
-                voucher: ""
-            }
-            return result
-        }
-
-    }
-    let result = {
-        code: 1,
-        voucher: voucher_2
-    }
-
-    return result
-
-}
-
-action_add_cart = async (page, product) => {
-
-    try {
-        let product_info = product.product_info
-        product_info = JSON.parse(product_info)
-
-        let product_models = product.product_models
-        let check_variation = 0
-        let variation = ""
-        console.log(product_info)
-
-        if (product_info.color) {
-            product_info.variation_1 = product_info.color
-        }
-        if (product_info.size) {
-            product_info.variation_2 = product_info.size
-        }
-        if (product_info.variation_1 == "N/A" || product_info.color == "N/A") {
-            product_info.variation_1 = ""
-        }
-        if (product_info.variation_2 == "N/A" || product_info.size == "N/A") {
-            product_info.variation_2 = ""
-        }
-        if (product_info.variation_3 == "N/A") {
-            product_info.variation_3 = ""
-        }
-
-        let variations = [product_info.variation_1, product_info.variation_2, product_info.variation_3]
-        variations.forEach((e, index) => {
-            if (e) {
-                if (index == 0) {
-                    variation = e
-                } else {
-                    variation = variation + "," + e
-                }
-            }
-        })
-
-
-        // if (product_info.color && product_info.size) {
-        //     variation_1 = product_info.color + "," + product_info.size
-
-
-        // } else if (!product_info.color && product_info.size) {
-        //     variation_1 = product_info.size
-        // } else if (product_info.color && !product_info.size) {
-        //     variation_1 = product_info.color
         // }
-
-        console.log(moment().format("hh:mm:ss") + " -- Phân loại sản phẩm: " + variation);
-
-        if (product_models.length) {
-            product_models.forEach(e => {
-
-                if (e.name == variation && e.normal_stock > 0) {
-                    // còn hàng
-                    check_variation = 1
-                    console.log(moment().format("hh:mm:ss") + " -- " + variation + " còn sản phẩm ");
-                }
-            })
-        }
-
-        if (check_variation == 1) {
-            // Chọn màu
-            if (product_info.variation_1) {
-                await page.click('[aria-label="' + product_info.variation_1 + '"]');
-                await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 1 :" + product_info.variation_1);
-            }
-
-            if (product_info.variation_2) {
-                await page.click('[aria-label="' + product_info.variation_2 + '"]');
-                await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 2: " + product_info.variation_2);
-            }
-
-            if (product_info.variation_3) {
-                await page.click('[aria-label="' + product_info.variation_3 + '"]');
-                await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 3: " + product_info.variation_3);
-            }
-        }
-        // else {
-        //     console.log(moment().format("hh:mm:ss") + "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng");
-        //     update_error_data = {}
-        //     update_error_data.order_id = product.id
-        //     update_error_data.username = product.username
-        //     update_error_data.slave = product.slave
-        //     update_error_data.error_code = 2002
-        //     update_error_data.product_link = product.product_link
-        //     update_error_data.error_log = "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
-        //     await update_error(update_error_data, 4)
-        //     return 0
-        // }
-
-        // chọn số lượng
-        await page.click('input[role="spinbutton"]', { clickCount: 2 });
-        await page.type('input[role="spinbutton"]', product_info.quantity)
-        console.log(moment().format("hh:mm:ss") + " Chọn Số lượng OK: " + product_info.quantity);
-
-        let check_btn_add_dard = await page.$$('.btn-tinted')
-
-        if (check_btn_add_dard.length > 1) {
-            await check_btn_add_dard[0].click();
-        }
-
-        check_error_add = await page.$x("//div[contains(text(), 'Please select product variation first')]")
-
-        if (check_error_add.length > 1) {
-            console.log(moment().format("hh:mm:ss") + " Lỗi khi chọn phân loại hàng, sai phân loại, biến thể");
-            update_error_data = {}
-            update_error_data.order_id = product.id
-            update_error_data.username = product.username
-            update_error_data.slave = product.slave
-            update_error_data.error_code = 1014
-            update_error_data.product_link = product.product_link
-            update_error_data.error_log = "Lỗi khi chọn phân loại hàng, sai phân loại, biến thể"
-            await update_error(update_error_data, 4)
-            return 0
-        }
-
-
-        return 1
     } catch (error) {
-        update_error_data = {}
-        update_error_data.order_id = product.id
-        update_error_data.username = product.username
-        update_error_data.slave = product.slave
-        update_error_data.product_link = product.product_link
-        update_error_data.error_message = error.message
-        update_error_data.error_code = 1006
-        update_error_data.error_log = "Lỗi hệ thống khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
-        await update_error(update_error_data, 4)
         console.log(error)
-        return 0
     }
-
-}
-
-remove_cart = async (page, product) => {
-
-    try {
-        await page.goto(product.shopee_country_url + "/cart")
-        await page.waitForSelector('.cart-page-logo__page-name')
-        await page.waitForTimeout(delay(6000, 4000))
-
-        let check_product_cart = await page.$x("//button[contains(text(), 'Delete')]");
-        let remove_order = check_product_cart.length - 1
-        console.log("Số đơn hàng cần xoá: " + remove_order)
-
-        if (remove_order > 0) {
-            for (let i = 0; i < remove_order; i++) {
-                await check_product_cart[i].click();
-                await page.waitForTimeout(delay(3000, 2000))
-            }
-        }
-
-    } catch (error) {
-        update_error_data = {}
-        update_error_data.order_id = product.id
-        update_error_data.username = product.username
-        update_error_data.slave = product.slave
-        update_error_data.product_link = product.product_link
-        update_error_data.error_message = error.message
-        update_error_data.error_code = 1008
-        update_error_data.error_log = "Lỗi hệ thống khi xoá sản phẩm trong giỏ hàng"
-        await update_error(update_error_data, 4)
-        console.log(error)
-        return 0
-    }
-    return 1
 
 }
 
@@ -802,7 +306,7 @@ login_shopee = async (page, accounts, browser) => {
         let check_verify = 0
         if (linkHandlers.length > 0) {
             await linkHandlers[0].click();
-        }
+        }        
 
         await page.waitForTimeout(delay(4000, 3000))
         // let x = Math.floor(Math.random() * 200);
@@ -821,53 +325,68 @@ login_shopee = async (page, accounts, browser) => {
             await check_login[0].click();
 
             await page.waitForTimeout(delay(6000, 5000))
-            // Click button:has-text("Google")
-            await page.waitForSelector('.social-white-google-png')
-            await page.click('.social-white-google-png')
 
-            await page.waitForTimeout(delay(11000, 9000))
+            await page.type('[name="loginKey"]', accounts[0], { delay: 100 })    // Nhập user 
+            await page.waitForTimeout(delay(2000, 1000))
+            await page.type('[name="password"]', accounts[1], { delay: 100 })    // Nhập comment 
+            await page.waitForTimeout(delay(3000, 2000))
 
-            let page1 = (await browser.pages())[1];
-            await page1.waitForTimeout(delay(4000, 3000))
-            //    await page1.waitForSelector('[autocomplete="username"]')
-            await page1.click('[autocomplete="username"]')
-            await page1.waitForTimeout(delay(4000, 2000))
-            await page1.type('[autocomplete="username"]', accounts[0], { delay: 100 })    // Nhập user 
+            let button_login = await page.$x("//button[contains(text(), 'Log In')]")
 
-            await page1.click('[id="identifierNext"]')
-            await page1.waitForTimeout(delay(6000, 4000))
-            await page1.waitForSelector('[autocomplete="current-password"]')
-            await page1.type('[autocomplete="current-password"]', accounts[1], { delay: 100 })    // Nhập comment 
-            await page1.waitForTimeout(delay(3000, 2000))
-            let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
-            if (click_next.length > 0) {
-                await click_next[1].click()
-                //    await page1.waitForTimeout(delay(3000, 2000))
-            }
+            if (button_login.length > 0) {
+                await button_login[0].click()
 
-            //    
-
-            let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
-
-            if (check_gmail_block.length) {
-                console.log("Email bị block : " + accounts[0])
+            } else {
                 update_error_data = {}
                 update_error_data.order_id = 0
                 update_error_data.username = accounts[0]
                 update_error_data.slave = slavenumber
-                update_error_data.error_code = 1013
+                update_error_data.error_code = 1007
                 update_error_data.product_link = ""
-                update_error_data.error_log = "Email bị block"
-                await update_error(update_error_data, 4)
-                return 2
-            }
-
-            try {
-                check_verify = await page.$$('[data-accountrecovery="false"]')
-            } catch (error) {
+                update_error_data.error_message = error.message
+                update_error_data.error_log = "Lỗi không tìm thấy nút login"
+                await api.update_error(update_error_data, 4)
                 console.log(error)
                 return 0
             }
+
+            await page.waitForTimeout(delay(5000, 4000))
+
+            let check_gmail_block = await page.$x("//span[contains(text(), 'Your account has been disabled')]");
+            let check_gmail_verify = await page.$x("//span[contains(text(), '2-Step Verification')]");
+            check_gmail_verify = await page.$x("//div[contains(text(), 'Get a verification code')]");
+
+            if (check_gmail_block.length || check_gmail_verify.length) {
+
+                console.log("Email bị block : " + accounts[0])
+                update_error_data.error_log = "Email bị block"
+                update_error_data.error_code = 1013
+
+                update_error_data = {}
+                update_error_data.order_id = 0
+                update_error_data.username = accounts[0]
+                update_error_data.slave = slavenumber
+
+                update_error_data.product_link = ""
+
+                await api.update_error(update_error_data, 4)
+                return 2
+            }
+
+                check_verify = await page.$$('[data-accountrecovery="false"]')
+                if(check_verify.length){
+                    console.log("Tài khoản bị verify : " + accounts[0])
+                    update_error_data.error_log = "Tài khoản bị verify"
+                    update_error_data.error_code = 1014    
+                    update_error_data = {}
+                    update_error_data.order_id = 0
+                    update_error_data.username = accounts[0]
+                    update_error_data.slave = slavenumber
+                    update_error_data.product_link = ""    
+                    await api.update_error(update_error_data, 4)
+                    return 2
+                }
+          
 
             if (check_verify.length) {
                 console.log("Email bị check point : " + accounts[0])
@@ -879,7 +398,7 @@ login_shopee = async (page, accounts, browser) => {
                 update_error_data.product_link = ""
                 update_error_data.error_message = error.message
                 update_error_data.error_log = "Email bị checkpoint"
-                await update_error(update_error_data, 4)
+                await api.update_error(update_error_data, 4)
                 return 2
             }
 
@@ -903,7 +422,7 @@ login_shopee = async (page, accounts, browser) => {
         update_error_data.product_link = ""
         update_error_data.error_message = error.message
         update_error_data.error_log = "Lỗi hệ thống khi login"
-        await update_error(update_error_data, 4)
+        await api.update_error(update_error_data, 4)
         console.log(error)
         return 0
     }
@@ -915,232 +434,11 @@ delay = (x, y) => {
     return a
 }
 
-update_error = async (product9, limit) => {
-    // const httpsAgent = new https.Agent({ rejectUnauthorized: false });
-    // process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0
-
-    await axios.post(update_error_url, {
-        data: product9,
-        timeout: 50000
-    },
-        {
-            // httpsAgent: httpsAgent
-        })
-        .then(function (response) {
-            console.log(moment().format("hh:mm:ss") + " - Update error: " + response.data);
-            return true
-        })
-        .catch(async function (error) {
-            console.log(error);
-            console.log(moment().format("hh:mm:ss") + " - Update error lỗi");
-            //      await updateErrorLogs(error, product9.slave)
-            limit = limit - 1
-            if (limit > 0) {
-                await sleep(delay(5000, 4000))
-                await update_error(product9, limit)
-            } else {
-                console.log(moment().format("hh:mm:ss") + " - Lỗi mạng không thể cập nhật dữ liệu");
-                return false
-            }
-        });
-}
-
-updateCookie = async (product9, limit) => {
-
-    await axios.post(update_cookie_url, {
-        data: product9,
-        timeout: 50000
-    })
-        .then(function (response) {
-            console.log(moment().format("hh:mm:ss") + " - Update cookie: " + response.data);
-            console.log(response.data)
-            return true
-        })
-        .catch(async function (error) {
-            console.log(error);
-            console.log(moment().format("hh:mm:ss") + " - Update cookie lỗi");
-
-            limit = limit - 1
-            if (limit > 0) {
-                await sleep(5000)
-                //  await updateCookie(product9, limit)
-            } else {
-                console.log(moment().format("hh:mm:ss") + " - Lỗi mạng không thể cập nhật dữ liệu");
-                return false
-            }
-        });
-}
-
-updatePoint = async (product9, limit) => {
-
-    product9.cookie = "";
-
-    await axios.post(update_point_url, {
-        data: product9,
-        timeout: 50000
-    })
-        .then(function (response) {
-            console.log(moment().format("hh:mm:ss") + " - Update point: " + response.data);
-            console.log(response.data)
-            return true
-        })
-        .catch(async function (error) {
-            console.log(error);
-            console.log(moment().format("hh:mm:ss") + " - Update point lỗi");
-
-            limit = limit - 1
-            if (limit > 0) {
-                await sleep(5000)
-                //  await updateCookie(product9, limit)
-            } else {
-                console.log(moment().format("hh:mm:ss") + " - Lỗi mạng không thể cập nhật dữ liệu");
-                return false
-            }
-        });
-}
-
-updateHistory = async (product9, limit) => {
-    console.log(moment().format("hh:mm:ss") + " - update_history");
-    product9.cookie = "";
-
-    await axios.post(update_history_url, {
-        data: product9,
-        timeout: 50000
-    })
-        .then(function (response) {
-            console.log(moment().format("hh:mm:ss") + " - Update history: " + response.data);
-            console.log(response.data)
-            return true
-        })
-        .catch(async function (error) {
-            console.log(error);
-            console.log(moment().format("hh:mm:ss") + " - Update history lỗi");
-
-            limit = limit - 1
-            if (limit > 0) {
-                await sleep(5000)
-                //  await updateCookie(product9, limit)
-            } else {
-                console.log(moment().format("hh:mm:ss") + " - Lỗi mạng không thể cập nhật history");
-                return false
-            }
-        });
-}
-
-
-action_heart_product = async (page) => {
-    try {
-        console.log("--- thả tim sản phẩm ---")
-        await page.keyboard.press('Home');
-
-        // click tha tim
-
-        await page.waitForTimeout(delay(4000, 3000))
-
-        // await page.evaluate(() => {
-        //     check = document.querySelector('.justify-center>.flex.items-center>svg>path')
-        //     if (check) {
-        //         document.querySelector('.justify-center>.flex.items-center>svg>path').click()
-        //     }
-        // })
-        check = await page.$('.justify-center>.flex.items-center>button>svg>path')
-        if (check) {
-            await check.click()
-        }
-        await page.waitForTimeout(delay(4000, 3000))
-
-    } catch (error) {
-        console.log(error)
-        await updateErrorLogs(error, slavenumber)
-    }
-}
-
-check_point_hour = async (uid) => {
-    result = 0
-
-    check_point_hour_url = apiUrl + "/api_user/check_point_hour?uid=" + uid
-
-    await axios.get(check_point_hour_url, {
-
-        timeout: 5000
-    },
-        {
-            headers: {
-                Connection: 'keep-alive',
-            }
-        })
-        .then(function (response) {
-
-            result = response.data
-        })
-        .catch(function (error) {
-            console.log(moment().format("hh:mm:ss") + " - Lỗi check điểm số")
-            result = 1
-        });
-    if (mode == "DEV") {
-        result = 1
-    }
-    console.log(moment().format("hh:mm:ss") + " - Có đủ điểm số để thao tác không: " + result);
-    return result
-}
-
-action_follow_shop = async (page) => {
-    try {
-        console.log("--- Follow shop ---")
-        await page.keyboard.press('Home');
-
-        // click follow
-        await page.waitForTimeout(delay(4000, 3000))
-
-        check = await page.$('.section-seller-overview-horizontal__buttons>a')
-        if (check) {
-            await check.click()
-        }
-        await page.waitForTimeout(delay(4000, 3000))
-
-    } catch (error) {
-        console.log(error)
-        await updateErrorLogs(error, slavenumber)
-    }
-}
 
 function sleep(ms) {
     return new Promise((resolve) => {
         setTimeout(resolve, ms);
     });
-}
-
-
-test_browser = async (option) => {
-    let param = [
-        // `--user-data-dir=${profile_dir}`,      // load profile chromium
-        '--disable-gpu',
-        '--no-sandbox',
-        '--lang=en-US',
-        '--disable-infobars',
-        '--disable-setuid-sandbox',
-        '--disable-dev-shm-usage',
-        '--disable-background-timer-throttling',
-        '--disable-backgrounding-occluded-windows',
-        '--disable-renderer-backgrounding',
-        '--disable-dev-shm-usage',
-        '--disable-accelerated-2d-canvas',
-        '--no-first-run',
-        '--window-position=0,0',
-        '--ignore-certifcate-errors-spki-list',
-        //  '--lang=' + user_lang,
-        '--disable-reading-from-canvas'
-    ]
-
-    const browser = await puppeteer.launch({
-        //executablePath: chromiumDir,
-        headless: headless_mode,
-        devtools: false,
-        //   userDataDir: `${profile_dir}`,
-        args: param
-    });
-
-    const page = (await browser.pages())[0];
 }
 
 
@@ -1310,7 +608,7 @@ runAllTime = async () => {
             if (mode !== "DEV") {
                 shell.exec('git stash;');
                 shell.exec('git pull origin master');
-                shell.exec('npm install;pm2 flush; pm2 start shopee.js; pm2 start restartall.js; pm2 startup; pm2 save; pm2 restart all');
+                shell.exec('npm install;pm2 flush; pm2 start shopee.js; pm2 startup; pm2 save; pm2 restart all');
 
                 return false
             }
@@ -1368,7 +666,7 @@ runAllTime = async () => {
         let acc = data_for_tab.sub_account
         let shopee_url = dataShopee.shopee_url
         let shopee_full_url = "https://" + shopee_url
-
+        
         let orders = data_for_tab.product_for_sub_account
 
         if (orders.length == 0) {
@@ -1383,6 +681,8 @@ runAllTime = async () => {
         subAccount[0] = acc.username
         subAccount[2] = acc.id
         subAccount[3] = acc.type
+        let country = acc.country
+        system_order_id = 0
         try {
             subAccount[1] = acc.password.split("\r")[0]
         } catch (error) {
@@ -1424,6 +724,7 @@ runAllTime = async () => {
 
         let browser = await gen_browser(option1)
         let page = await gen_page(browser, option1)
+        //   await page.evaluateOnNewDocument(preloadFile);
 
         //  await page.emulate(m);
 
@@ -1462,6 +763,8 @@ runAllTime = async () => {
             let checklogin = await login_shopee(page, subAccount, browser)
 
             console.log(moment().format("hh:mm:ss") + " - index = " + index + " - check login account: " + subAccount[0] + " - " + checklogin)
+
+
 
             if (checklogin == 0 || checklogin == 4) {
                 await browser.close();
@@ -1507,6 +810,9 @@ runAllTime = async () => {
                 console.log(" ----- KhởI đÔng lại ---- ")
                 shell.exec('pm2 flush, pm2 restart all');
             }
+
+
+
             if (checklogin == 1) {
 
                 if (slaveInfo.type == "order_system") {
@@ -1522,6 +828,8 @@ runAllTime = async () => {
                     for (let o = 0; o < max_turn; o++) {
 
                         let order_1 = orders[0]
+                        console.log("ORDER id: " + order_1.id)
+
                         let product_link = order_1.product_link
                         let get_link = product_link.split("/")
                         let shopee_country_url = "https://" + get_link[2]
@@ -1551,6 +859,49 @@ runAllTime = async () => {
 
                         let check_add_cart
 
+                        cookies22 = await page.cookies(shopee_country_url)
+
+                        cookie1 = ""
+
+                        cookies22.forEach((row, index) => {
+                            cookie1 = cookie1 + row.name + "=" + row.value
+                            if (index != (cookies22.length - 1)) {
+                                cookie1 = cookie1 + "; "
+                            }
+                        })
+
+
+                        // console.log(moment().format("hh:mm:ss") + " --- Lấy list đơn hàng đã đặt: ")
+                        // order_id_list = await get_all_order_list(shopee_country_url, cookie1)
+                        // console.log(order_id_list)
+
+                        // if (order_id_list.length) {
+
+                        // }
+                        // try {
+                        //     order_id_list.forEach(e => {
+                        //         order_detail = await get_order_detail(shopee_country_url, e, cookie1)
+
+                        //         order_detail.primary_buttons = ""
+                        //         order_detail.secondary_buttons = ""
+                        //         order_detail.status = ""
+                        //         order_detail.notification_bar = ""
+                        //         order_detail.guarantee = ""
+                        //         order_detail.ereceipt = ""
+                        //         order_detail.coins = ""
+                        //         order_detail.components = ""
+                        //         order_detail.order_id = e
+                        //         order_detail.country = productForUser.country
+
+                        //         await api.updateOrder(order_detail, 3)
+                        //     })
+
+                        // } catch (error) {
+
+                        // }
+
+
+
                         try {
                             await page.waitForSelector(".shopee-searchbar-input")
                         } catch (error) {
@@ -1559,14 +910,14 @@ runAllTime = async () => {
                             return
                         }
 
-                        let delete_cart = await remove_cart(page, productForUser)
+                        let delete_cart = await actionShopee.remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
                         if (delete_cart == 0) {
                             await browser.close()
                             return
                         }
 
-                        await page.waitForTimeout(delay(6000, 4000))
+                        await page.waitForTimeout(delay(3000, 2000))
                         if (o == 0) {
                             console.log("country shopee link: " + shopee_country_url)
                             let shopee_cookie = await page.cookies(shopee_country_url)
@@ -1575,8 +926,16 @@ runAllTime = async () => {
                             data_clone.clone_id = acc.id
                             data_clone.cookie = shopee_cookie
                             //   console.log("cookie clone: " + shopee_cookie.length)
-                            await updateCookie(data_clone, 1)
+                            await api.updateCookie(data_clone, 1)
                             await page.waitForTimeout(delay(6000, 4000))
+
+                            shopee_cookie.forEach((row, index) => {
+                                cookie1 = cookie1 + row.name + "=" + row.value
+                                if (index != (shopee_cookie.length - 1)) {
+                                    cookie1 = cookie1 + "; "
+                                }
+                            })
+                            await update_order_status(shopee_country_url, cookie1)
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
@@ -1608,7 +967,7 @@ runAllTime = async () => {
                                     }
                                 }
                             } catch (error) {
-                                //     await updateErrorLogs(error, slavenumber)
+
                             }
                             // check add card
                             let check_add_to_cart = url.split("api/v4/cart/add_to")
@@ -1665,7 +1024,7 @@ runAllTime = async () => {
                                 console.log("product name: " + productForUser.product_name)
                                 console.log("product id: " + productForUser.product_id)
                                 console.log("ORDER id: " + productForUser.id)
-
+                                system_order_id = productForUser.id
                                 products_name.push(productForUser.product_name)
 
                                 product_order_info = productForUser
@@ -1691,14 +1050,18 @@ runAllTime = async () => {
                                     await check_confirm.click(".shopee-alert-popup__btn")
                                 }
 
+                                // cập nhật thông tin đơn hàng
+
+
+
                                 await page.waitForTimeout(delay(4000, 2000))
 
                                 // if (options.add_cart) {
-                                check_point = await check_point_hour(productForUser.uid)
+                                check_point = await api.check_point_hour(productForUser.uid)
                                 if (check_point) {
                                     random_add_cart = Math.floor(Math.random() * 4);
 
-                                    let check_1 = await action_add_cart(page, productForUser)
+                                    let check_1 = await actionShopee.action_add_cart(page, productForUser)
 
                                     if (check_1) {
 
@@ -1716,7 +1079,7 @@ runAllTime = async () => {
 
                             } catch (error) {
                                 console.log(error)
-                                // await updateErrorLogs(error, slavenumber)
+
                             }
 
                             //    await removeCart(page)
@@ -1727,7 +1090,7 @@ runAllTime = async () => {
                     product_order_info.products_name = products_name
                     product_order_info.voucher = voucher
 
-                    let check_2 = await action_order(page, product_order_info)
+                    let check_2 = await actionShopee.action_order(page, product_order_info)
                     product_order_info.action = "order_product"
 
                     await sleep(delay(6000, 4000));
@@ -1740,7 +1103,43 @@ runAllTime = async () => {
                             //    await sleep(delay(6000, 5000))
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
-                            await updatePoint(product_order_info, 3)
+                            await api.updatePoint(product_order_info, 3)
+                            cookies22 = await page.cookies(shopee_full_url)
+
+                            cookie1 = ""
+
+                            cookies22.forEach((row, index) => {
+                                cookie1 = cookie1 + row.name + "=" + row.value
+                                if (index != (cookies22.length - 1)) {
+                                    cookie1 = cookie1 + "; "
+                                }
+                            })
+
+                            try {
+                                console.log(moment().format("hh:mm:ss") + " --- Lấy thông tin đơn hàng mới tạo: ")
+                                order_id_list = await shopeeApi.get_all_order_list(shopee_full_url, cookie1, 5, 0)
+
+                                if (order_id_list.length) {
+                                    order_detail = await shopeeApi.get_order_detail(shopee_full_url, order_id_list[0].shopee_order_id, cookie1)
+                                    order_detail.primary_buttons = ""
+                                    order_detail.secondary_buttons = ""
+                                    order_detail.notification_bar = ""
+                                    order_detail.guarantee = ""
+                                    order_detail.ereceipt = ""
+                                    order_detail.coins = ""
+                                    order_detail.components = ""
+                                    order_detail.shopee_order_id = order_id_list[0]
+                                    order_detail.country = country
+                                    order_detail.id = system_order_id
+                                   
+                                    await api.updateOrder(order_detail, 3)
+                                }
+
+                            } catch (error) {
+                                console.log(moment().format("hh:mm:ss") + " --- Có lỗi khi Lấy thông tin đơn hàng mới tạo: ")
+                                console.log(error)
+                            }
+
                         } else {
                             product_order_info.result = "fail"
                         }
@@ -1750,7 +1149,7 @@ runAllTime = async () => {
                     }
 
                     product_order_info.voucher = check_2.voucher
-                    await updateHistory(product_order_info, 3)
+                    await api.updateHistory(product_order_info, 3)
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
                 }
                 //    await sleep(999999);
