@@ -13,7 +13,7 @@ function csrftoken() {
 }
 
 
-get_order_detail = async (url, order_id, cookie) => {
+get_order_detail = async (url, order_id, cookie, token) => {
     console.log(moment().format("hh:mm:ss") + " --- Lấy chi tiết đơn hàng: " + order_id)
     var config = {
         method: 'get',
@@ -52,7 +52,7 @@ get_order_detail = async (url, order_id, cookie) => {
 
 get_all_order_list = async (url, cookie, limit, offset) => {
     url = url + '/api/v4/order/get_all_order_and_checkout_list?limit=' + limit + '&offset=' + offset
-   
+
     var config = {
         method: 'get',
         url: url,
@@ -95,9 +95,10 @@ get_all_order_list = async (url, cookie, limit, offset) => {
         .catch(function (error) {
             console.log(error);
         });
-    
+
     return order_id_list
 }
+
 
 get_order_list_by_status = async (url, cookie, list_type, limit, offset) => {
 
@@ -146,10 +147,53 @@ get_order_list_by_status = async (url, cookie, list_type, limit, offset) => {
     return order_id_list
 }
 
+comfirm_order_complete = async (url, cookie, order_id) => {
+    xcsrftoken = cookie.match(/csrftoken=(.*?);/)
+
+    url = url + '/api/v4/order/action/confirm_order_delivered/'
+
+    var config = {
+        method: 'post',
+        url: url,
+        headers: {
+            // 'authority': 'shopee.vn',
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.9',
+            'cache-control': 'no-cache',
+            'cookie': cookie,
+            // 'if-none-match-': '55b03-429b3f5312c1f66cbdca7386aa61e9bd', 
+            'pragma': 'no-cache',
+            'referer': url + '/user/purchase?type=6',
+            'x-csrftoken': xcsrftoken[1],
+            'sec-ch-ua-mobile': '?0',
+            'sec-fetch-dest': 'empty',
+            'sec-fetch-mode': 'cors',
+            'sec-fetch-site': 'same-origin',
+            'x-api-source': 'pc',
+            'x-requested-with': 'XMLHttpRequest',
+            'x-shopee-language': 'en'
+        },
+        data: {
+            order_id: order_id
+        }
+    };
+
+    await axios(config)
+        .then(function (response) {
+            console.log("Kết quả shopee comfirm_order_complete OK : " + order_id);
+
+        })
+        .catch(function (error) {
+            console.log(error);
+        });
+
+}
+
 module.exports = {
 
     get_order_detail,
     get_all_order_list,
     get_order_list_by_status,
+    comfirm_order_complete
 
 }

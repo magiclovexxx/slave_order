@@ -260,38 +260,54 @@ add_address = async (page, product, cookies) => {
 }
 
 update_order_status = async (url, cookie) => {
+    let order_list_4 = []
     try {
         console.log(moment().format("hh:mm:ss") + " -- update_order_status --");
         // Lấy thông tin 20 đơn hàng đầU
         let order_list = await shopeeApi.get_all_order_list(url, cookie, 20, 0)
+        if(order_list.length == 20){
+            order_list_4 = await shopeeApi.get_all_order_list(url, cookie, 20, 20)
+        }
+
+        order_list.push(order_list_4)
+
         console.log(" ORder list: " + order_list.length)
         // update và check trạng thái đơn hàng trên sv xem đã có tracking_number chưa
         let order_list_2 = await api.updateOrderStatus(order_list, 3)
+
         let order_list_3 = []
 
-        if (order_list_2.length) {
-            order_list_2.forEach(async e => {
-                //   let x = await get_order_detail(url, e.shopee_order_id, cookie)
-
-                if (x.pc_shipping) {
-                    let a = {
-                        shopee_order_id: e.shopee_order_id,
-                        shopee_order_id_2: e.pc_processing_info.order_sn,
-                        shopee_tracking_number: x.pc_shipping.forder_shipping_info_list[0].tracking_number,
-                    }
-
-                    if (a) {
-                        order_list_3.push(a)
-                    }
+        if(order_list.length){
+            order_list.forEach(async e => {
+                if(e.status == "label_order_delivered"){
+                   await comfirm_order_complete(url, cookie, e.shopee_order_id)
                 }
-
             })
-
-            if (order_list_2.length) {
-                //    let order_list_2 = await api.updateOrderStatus(order_list_3, 3)
-            }
-
         }
+        // if (order_list_2.length) {
+        //     order_list_2.forEach(async e => {
+        //            let x = await get_order_detail(url, e.shopee_order_id, cookie)
+
+        //         if (x.pc_shipping) {
+        //             let a = {
+        //                 shopee_order_id: e.shopee_order_id,
+        //                 shopee_order_id_2: e.pc_processing_info.order_sn,
+        //                 shopee_tracking_number: x.pc_shipping.forder_shipping_info_list[0].tracking_number,
+        //             }
+
+        //             if (a) {
+        //                 order_list_3.push(a)
+        //             }
+        //         }
+
+        //     })
+
+        //     if (order_list_2.length) {
+        //         let order_list_2 = await api.updateOrderStatus(order_list_3, 3)
+        //     }
+
+        // }
+
     } catch (error) {
         console.log(error)
     }
@@ -389,12 +405,7 @@ login_shopee = async (page, accounts, browser) => {
                 return 2
             }
 
-        }
-
-        if (pending_check == 1) {
-            console.log(" ---- pending check ----")
-            await sleep(9999999)
-        }
+        }       
 
         await page.waitForTimeout(delay(6000, 4000))
         check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
@@ -631,6 +642,8 @@ runAllTime = async () => {
 
     shopee_point = dataShopee.shopee_point
     voucher = dataShopee.voucher
+    shopee_country_1 = dataShopee.shopee_country
+
     if (dataShopee.slave_info) {
         slaveInfo = dataShopee.slave_info
         if (slaveInfo.status == 0) {
@@ -639,6 +652,7 @@ runAllTime = async () => {
             return;
         }
     }
+
 
     console.log(moment().format("hh:mm:ss") + " - START SHOPEE ORDER")
 
@@ -725,7 +739,8 @@ runAllTime = async () => {
 
             if (cookie2) {
                 cookie2 = JSON.parse(cookie2)
-
+                console.log("cookie length: " + cookie2.length)
+              //  console.log(cookie2)
                 cookie2.forEach(async e => {
                     await page.setCookie(e)
                 })
@@ -823,7 +838,9 @@ runAllTime = async () => {
 
                         let product_link = order_1.product_link
                         let get_link = product_link.split("/")
-                        let shopee_country_url = "https://" + get_link[2]
+
+                        let shopee_country_url = shopee_full_url
+                        
                         let productForUser                     // Mảng chứa thông tin sản phẩm, từ khoá cần tương tác
                         let check_like = 0
                         let check_follow = 0
@@ -849,6 +866,7 @@ runAllTime = async () => {
                         }
 
                         let check_add_cart
+                        console.log("Shopee full url= " + shopee_country_url)
 
                         cookies22 = await page.cookies(shopee_country_url)
 
@@ -901,6 +919,12 @@ runAllTime = async () => {
                             return
                         }
 
+                        // ------------ remove cart ------------------//
+                        if (pending_check == 1) {
+                            console.log(" ---- pending check ----")
+                            await sleep(9999999)
+                        }
+
                         let delete_cart = await actionShopee.remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
                         if (delete_cart == 0) {
@@ -926,7 +950,13 @@ runAllTime = async () => {
                                     cookie1 = cookie1 + "; "
                                 }
                             })
-                            //    await update_order_status(shopee_country_url, cookie1)
+                           
+                            await update_order_status(shopee_country_url, cookie1)
+
+                            if (pending_check == 1) {
+                                console.log(" ---- pending check ----")
+                                await sleep(9999999)
+                            }
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
