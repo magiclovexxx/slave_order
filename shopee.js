@@ -306,7 +306,7 @@ login_shopee = async (page, accounts, browser) => {
         let check_verify = 0
         if (linkHandlers.length > 0) {
             await linkHandlers[0].click();
-        }        
+        }
 
         await page.waitForTimeout(delay(4000, 3000))
         // let x = Math.floor(Math.random() * 200);
@@ -352,56 +352,48 @@ login_shopee = async (page, accounts, browser) => {
 
             await page.waitForTimeout(delay(5000, 4000))
 
-            let check_gmail_block = await page.$x("//span[contains(text(), 'Your account has been disabled')]");
-            let check_gmail_verify = await page.$x("//span[contains(text(), '2-Step Verification')]");
-            check_gmail_verify = await page.$x("//div[contains(text(), 'Get a verification code')]");
+            // let check_gmail_block = await page.$x("//span[contains(text(), 'Your account has been disabled')]");
+            // let check_gmail_verify = await page.$x("//span[contains(text(), '2-Step Verification')]");
+            // check_account_verify = await page.$x("//div[contains(text(), 'Security check')]");
 
-            if (check_gmail_block.length || check_gmail_verify.length) {
+            // if (check_gmail_block.length || check_account_verify.length) {
 
-                console.log("Email bị block : " + accounts[0])
-                update_error_data.error_log = "Email bị block"
-                update_error_data.error_code = 1013
+            //     console.log("Email bị block : " + accounts[0])
+            //     update_error_data.error_log = "Email bị block"
+            //     update_error_data.error_code = 1013
 
-                update_error_data = {}
-                update_error_data.order_id = 0
-                update_error_data.username = accounts[0]
-                update_error_data.slave = slavenumber
+            //     update_error_data = {}
+            //     update_error_data.order_id = 0
+            //     update_error_data.username = accounts[0]
+            //     update_error_data.slave = slavenumber
 
-                update_error_data.product_link = ""
+            //     update_error_data.product_link = ""
 
-                await api.update_error(update_error_data, 4)
-                return 2
-            }
+            //     await api.update_error(update_error_data, 4)
+            //     return 2
+            // }
 
-                check_verify = await page.$$('[data-accountrecovery="false"]')
-                if(check_verify.length){
-                    console.log("Tài khoản bị verify : " + accounts[0])
-                    update_error_data.error_log = "Tài khoản bị verify"
-                    update_error_data.error_code = 1014    
-                    update_error_data = {}
-                    update_error_data.order_id = 0
-                    update_error_data.username = accounts[0]
-                    update_error_data.slave = slavenumber
-                    update_error_data.product_link = ""    
-                    await api.update_error(update_error_data, 4)
-                    return 2
-                }
-          
+            check_verify = await page.$x("//div[contains(text(), 'Security check')]");
 
             if (check_verify.length) {
-                console.log("Email bị check point : " + accounts[0])
+                console.log("Tài khoản bị check point : " + accounts[0])
                 update_error_data = {}
                 update_error_data.order_id = 0
                 update_error_data.username = accounts[0]
                 update_error_data.slave = slavenumber
-                update_error_data.error_code = 1010
+                update_error_data.error_code = 2007
                 update_error_data.product_link = ""
-                update_error_data.error_message = error.message
-                update_error_data.error_log = "Email bị checkpoint"
+                update_error_data.error_message = "Tài khoản bị checkpoint"
+                update_error_data.error_log = "Tài khoản bị checkpoint"
                 await api.update_error(update_error_data, 4)
                 return 2
             }
 
+        }
+
+        if (pending_check == 1) {
+            console.log(" ---- pending check ----")
+            await sleep(9999999)
         }
 
         await page.waitForTimeout(delay(6000, 4000))
@@ -666,7 +658,7 @@ runAllTime = async () => {
         let acc = data_for_tab.sub_account
         let shopee_url = dataShopee.shopee_url
         let shopee_full_url = "https://" + shopee_url
-        
+
         let orders = data_for_tab.product_for_sub_account
 
         if (orders.length == 0) {
@@ -807,8 +799,7 @@ runAllTime = async () => {
                         // always executed
                     });
                 await browser.close();
-                console.log(" ----- KhởI đÔng lại ---- ")
-                shell.exec('pm2 flush, pm2 restart all');
+                return false
             }
 
 
@@ -935,7 +926,7 @@ runAllTime = async () => {
                                     cookie1 = cookie1 + "; "
                                 }
                             })
-                        //    await update_order_status(shopee_country_url, cookie1)
+                            //    await update_order_status(shopee_country_url, cookie1)
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
@@ -1131,7 +1122,7 @@ runAllTime = async () => {
                                     order_detail.shopee_order_id = order_id_list[0]
                                     order_detail.country = country
                                     order_detail.id = system_order_id
-                                   
+
                                     await api.updateOrder(order_detail, 3)
                                 }
 
