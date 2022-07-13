@@ -260,27 +260,42 @@ add_address = async (page, product, cookies) => {
 }
 
 update_order_status = async (url, cookie) => {
-    let order_list_4 = []
+    order_list_4 = []
+    order_list   = []
+    order_list_5 = []
+    order_list_3 = []
     try {
         console.log(moment().format("hh:mm:ss") + " -- update_order_status --");
         // Lấy thông tin 20 đơn hàng đầU
-        let order_list = await shopeeApi.get_all_order_list(url, cookie, 20, 0)
-        if(order_list.length == 20){
-            order_list_4 = await shopeeApi.get_all_order_list(url, cookie, 20, 20)
+       
+        order_list_5 = await shopeeApi.get_all_order_list(url, cookie, 20, 0)
+        console.log("ORder list 1: " + order_list_5.length)
+        order_list.push(...order_list_5)
+
+        for(let i=1; i<20; i++){
+
+            if (order_list_5.length == 20) {        
+                order_list_5 = await shopeeApi.get_all_order_list(url, cookie, 20, 20*i)
+                console.log("ORder list : " + i + " -- " + order_list_5.length)
+            }else {
+                continue
+            }
+
+            if(order_list_5.length){
+                order_list.push(...order_list_5)
+            } 
         }
-
-        order_list.push(order_list_4)
-
-        console.log(" ORder list: " + order_list.length)
+        
+        console.log(" ORder list all: " + order_list.length)
         // update và check trạng thái đơn hàng trên sv xem đã có tracking_number chưa
         let order_list_2 = await api.updateOrderStatus(order_list, 3)
 
-        let order_list_3 = []
 
-        if(order_list.length){
-            order_list.forEach(async e => {
-                if(e.status == "label_order_delivered"){
-                   await comfirm_order_complete(url, cookie, e.shopee_order_id)
+        if (order_list.length) {
+            order_list.forEach(async e => {   
+            //    console.log(e.status)         
+                if (e.status == "label_order_delivered") {
+                    await comfirm_order_complete(url, cookie, e.shopee_order_id)
                 }
             })
         }
@@ -329,6 +344,12 @@ login_shopee = async (page, accounts, browser) => {
         // let y =Math.floor(Math.random() * 50);
         // console.log(x + "x" + y)
         // await page.mouse.click(x, y)
+
+        // if (pending_check == 1) {
+        //     console.log(" ---- pending check ----")
+        //     await sleep(39999)
+        // }
+
         await page.click('.header-with-search__logo-wrapper')
         await page.waitForTimeout(delay(4000, 3000))
         let check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
@@ -405,7 +426,7 @@ login_shopee = async (page, accounts, browser) => {
                 return 2
             }
 
-        }       
+        }
 
         await page.waitForTimeout(delay(6000, 4000))
         check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
@@ -559,6 +580,39 @@ gen_page = async (browser, option) => {
     // }
 
     return page
+}
+
+function getCookiesMap(cookiesString, url) {
+    let cookies = []
+    const ck_obj = cookiesString.split(";")
+        .map(function (cookieString) {
+            return cookieString.trim().split(/=(.+)/);
+        })
+        .reduce(function (acc, curr) {
+            acc[curr[0]] = curr[1];
+            return acc;
+        }, {})
+    const keys = Object.keys(ck_obj)
+    for (let i = 0; i < keys.length; i++) {
+        cookies.push({
+            name: keys[i],
+            value: ck_obj[keys[i]],
+            domain: url,
+            path: '/'
+        })
+    }
+    return cookies
+}
+
+cookie_to_string = function (cookies22) {
+    let cookie1 = ""
+    cookies22.forEach((row, index) => {
+        cookie1 = cookie1 + row.name + "=" + row.value
+        if (index != (cookies22.length - 1)) {
+            cookie1 = cookie1 + "; "
+        }
+    })
+    return cookie1
 }
 
 check_order_complete = 0
@@ -738,13 +792,12 @@ runAllTime = async () => {
             let cookie2 = acc.cookie
 
             if (cookie2) {
-                cookie2 = JSON.parse(cookie2)
-                console.log("cookie length: " + cookie2.length)
-              //  console.log(cookie2)
-                cookie2.forEach(async e => {
-                    await page.setCookie(e)
-                })
-                //await page.setCookie([...cookie2])
+                //    cookie2 = JSON.parse(cookie2)
+                cookie3 = getCookiesMap(cookie2, "." + shopee_country_1.shopee_short_url)
+
+                console.log("cookie length: " + cookie3.length)
+
+                await page.setCookie(...getCookiesMap(cookie2, "." + shopee_country_1.shopee_short_url))
                 console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
             }
         } catch (e) {
@@ -840,7 +893,7 @@ runAllTime = async () => {
                         let get_link = product_link.split("/")
 
                         let shopee_country_url = shopee_full_url
-                        
+
                         let productForUser                     // Mảng chứa thông tin sản phẩm, từ khoá cần tương tác
                         let check_like = 0
                         let check_follow = 0
@@ -870,14 +923,7 @@ runAllTime = async () => {
 
                         cookies22 = await page.cookies(shopee_country_url)
 
-                        cookie1 = ""
-
-                        cookies22.forEach((row, index) => {
-                            cookie1 = cookie1 + row.name + "=" + row.value
-                            if (index != (cookies22.length - 1)) {
-                                cookie1 = cookie1 + "; "
-                            }
-                        })
+                        cookie1 = cookie_to_string(cookies22)
 
 
                         // console.log(moment().format("hh:mm:ss") + " --- Lấy list đơn hàng đã đặt: ")
@@ -920,10 +966,10 @@ runAllTime = async () => {
                         }
 
                         // ------------ remove cart ------------------//
-                        if (pending_check == 1) {
-                            console.log(" ---- pending check ----")
-                            await sleep(9999999)
-                        }
+                        // if (pending_check == 1) {
+                        //     console.log(" ---- pending check ----")
+                        //     await sleep(9999999)
+                        // }
 
                         let delete_cart = await actionShopee.remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
@@ -938,19 +984,17 @@ runAllTime = async () => {
                             let shopee_cookie = await page.cookies(shopee_country_url)
                             let data_clone = {}
                             let cookie1
+                            cookie1 = cookie_to_string(shopee_cookie)
+
                             data_clone.clone_id = acc.id
-                            data_clone.cookie = shopee_cookie
+                            data_clone.cookie = cookie1
+                           
                             //   console.log("cookie clone: " + shopee_cookie.length)
                             await api.updateCookie(data_clone, 1)
                             await page.waitForTimeout(delay(6000, 4000))
 
-                            shopee_cookie.forEach((row, index) => {
-                                cookie1 = cookie1 + row.name + "=" + row.value
-                                if (index != (shopee_cookie.length - 1)) {
-                                    cookie1 = cookie1 + "; "
-                                }
-                            })
-                           
+
+
                             await update_order_status(shopee_country_url, cookie1)
 
                             if (pending_check == 1) {
@@ -1059,12 +1103,7 @@ runAllTime = async () => {
                                 productForUser.user_lang = user_lang
                                 cookie1 = ""
 
-                                cookies22.forEach((row, index) => {
-                                    cookie1 = cookie1 + row.name + "=" + row.value
-                                    if (index != (cookies22.length - 1)) {
-                                        cookie1 = cookie1 + "; "
-                                    }
-                                })
+                                cookie1 = cookie_to_string(cookie22)
 
                                 let check_confirm = await page.$(".shopee-alert-popup__btn")
                                 if (check_confirm) {
@@ -1072,8 +1111,6 @@ runAllTime = async () => {
                                 }
 
                                 // cập nhật thông tin đơn hàng
-
-
 
                                 await page.waitForTimeout(delay(4000, 2000))
 
@@ -1129,12 +1166,7 @@ runAllTime = async () => {
 
                             cookie1 = ""
 
-                            cookies22.forEach((row, index) => {
-                                cookie1 = cookie1 + row.name + "=" + row.value
-                                if (index != (cookies22.length - 1)) {
-                                    cookie1 = cookie1 + "; "
-                                }
-                            })
+                            cookie1 = cookie_to_string(cookie22)
 
                             try {
                                 console.log(moment().format("hh:mm:ss") + " --- Lấy thông tin đơn hàng mới tạo: ")

@@ -149,7 +149,7 @@ get_order_list_by_status = async (url, cookie, list_type, limit, offset) => {
 
 comfirm_order_complete = async (url, cookie, order_id) => {
     xcsrftoken = cookie.match(/csrftoken=(.*?);/)
-
+//    console.log(xcsrftoken)
     url = url + '/api/v4/order/action/confirm_order_delivered/'
 
     var config = {

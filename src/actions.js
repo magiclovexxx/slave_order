@@ -24,7 +24,7 @@ remove_cart = async (page, product) => {
             await click_cart[0].click()
         }
 
-        await page.waitForSelector('.cart-page-logo__page-name')
+        //await page.waitForSelector('.cart-page-logo__page-name')
         await page.waitForTimeout(delay(6000, 4000))
 
         let check_product_cart = await page.$x("//button[contains(text(), 'Delete')]");
