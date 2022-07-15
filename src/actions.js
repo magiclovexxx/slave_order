@@ -17,14 +17,14 @@ remove_cart = async (page, product) => {
     console.log(moment().format("hh:mm:ss") + " -- REMOVE CART: ");
     try {
 
-        //await page.goto(product.shopee_country_url + "/cart")
+        await page.goto(product.shopee_country_url + "/cart")
 
-        let click_cart = await page.$$('#cart_drawer_target_id')
-        if(click_cart.length){
-            await click_cart[0].click()
-        }
+        // let click_cart = await page.$$('#cart_drawer_target_id')
+        // if(click_cart.length){
+        //     await click_cart[0].click()
+        // }
 
-        //await page.waitForSelector('.cart-page-logo__page-name')
+        await page.waitForSelector('.cart-page-logo__page-name')
         await page.waitForTimeout(delay(6000, 4000))
 
         let check_product_cart = await page.$x("//button[contains(text(), 'Delete')]");
@@ -482,7 +482,7 @@ action_order = async (page, product) => {
 }
 
 run_time = async () =>{
-    
+
 }
 module.exports = {
 

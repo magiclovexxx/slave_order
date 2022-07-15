@@ -618,6 +618,12 @@ cookie_to_string = function (cookies22) {
     return cookie1
 }
 
+nuoi_tai_khoan = function (page) {
+
+
+}
+
+
 check_order_complete = 0
 
 runAllTime = async () => {
@@ -880,12 +886,17 @@ runAllTime = async () => {
                 if (slaveInfo.type == "order_system") {
                     console.log(moment().format("hh:mm:ss") + " --- Đặt đơn tự động ---")
 
-                    if (mode == "DEV") {
-                        //   max_turn = 1
-                        max_turn = orders.length
-                    } else {
-                        max_turn = orders.length
+                    if(orders.length){
+                        if (mode == "DEV") {
+                            //   max_turn = 1
+                            max_turn = orders.length
+                        } else {
+                            max_turn = orders.length
+                        }
+                    }else{
+                        max_turn = 1
                     }
+                   
 
                     for (let o = 0; o < max_turn; o++) {
 
@@ -965,14 +976,8 @@ runAllTime = async () => {
                             await api.updateCookie(data_clone, 1)
                             await page.waitForTimeout(delay(6000, 4000))
 
-
-
                             await update_order_status(shopee_country_url, cookie1)
-
-                            if (pending_check == 1) {
-                                console.log(" ---- pending check ----")
-                                await sleep(9999999)
-                            }
+                            
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
@@ -1075,7 +1080,7 @@ runAllTime = async () => {
                                 productForUser.user_lang = user_lang
                                 cookie1 = ""
 
-                                cookie1 = cookie_to_string(cookie22)
+                                cookie1 = cookie_to_string(cookies22)
 
                                 let check_confirm = await page.$(".shopee-alert-popup__btn")
                                 if (check_confirm) {
@@ -1120,6 +1125,8 @@ runAllTime = async () => {
                     product_order_info.products_name = products_name
                     product_order_info.voucher = voucher
 
+                    
+
                     let check_2 = await actionShopee.action_order(page, product_order_info)
                     product_order_info.action = "order_product"
 
@@ -1138,7 +1145,7 @@ runAllTime = async () => {
 
                             cookie1 = ""
 
-                            cookie1 = cookie_to_string(cookie22)
+                            cookie1 = cookie_to_string(cookies22)
 
                             try {
                                 console.log(moment().format("hh:mm:ss") + " --- Lấy thông tin đơn hàng mới tạo: ")
@@ -1176,6 +1183,10 @@ runAllTime = async () => {
                     product_order_info.voucher = check_2.voucher
                     await api.updateHistory(product_order_info, 3)
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
+                }
+                if (pending_check == 1) {
+                    console.log(" ---- pending check ----")
+                    await sleep(9999999)
                 }
                 //    await sleep(999999);
                 await browser.close();
