@@ -295,7 +295,10 @@ update_order_status = async (url, cookie) => {
             order_list.forEach(async e => {   
             //    console.log(e.status)         
                 if (e.status == "label_order_delivered") {
-                    await comfirm_order_complete(url, cookie, e.shopee_order_id)
+                    await comfirm_order_complete(url, cookie, e.shopee_order_id)                    
+                }
+                if(e.rating == "order_tooltip_completed_buyer_not_rated_can_rate"){
+                   await shopeeApi.rating_order(url, cookie, e.shopee_order_id, e.shop_id, e.item_id, "")
                 }
             })
         }
@@ -925,38 +928,6 @@ runAllTime = async () => {
 
                         cookie1 = cookie_to_string(cookies22)
 
-
-                        // console.log(moment().format("hh:mm:ss") + " --- Lấy list đơn hàng đã đặt: ")
-                        // order_id_list = await get_all_order_list(shopee_country_url, cookie1)
-                        // console.log(order_id_list)
-
-                        // if (order_id_list.length) {
-
-                        // }
-                        // try {
-                        //     order_id_list.forEach(e => {
-                        //         order_detail = await get_order_detail(shopee_country_url, e, cookie1)
-
-                        //         order_detail.primary_buttons = ""
-                        //         order_detail.secondary_buttons = ""
-                        //         order_detail.status = ""
-                        //         order_detail.notification_bar = ""
-                        //         order_detail.guarantee = ""
-                        //         order_detail.ereceipt = ""
-                        //         order_detail.coins = ""
-                        //         order_detail.components = ""
-                        //         order_detail.order_id = e
-                        //         order_detail.country = productForUser.country
-
-                        //         await api.updateOrder(order_detail, 3)
-                        //     })
-
-                        // } catch (error) {
-
-                        // }
-
-
-
                         try {
                             await page.waitForSelector(".shopee-searchbar-input")
                         } catch (error) {
@@ -981,9 +952,10 @@ runAllTime = async () => {
                         await page.waitForTimeout(delay(3000, 2000))
                         if (o == 0) {
                             console.log("country shopee link: " + shopee_country_url)
-                            let shopee_cookie = await page.cookies(shopee_country_url)
+                            
                             let data_clone = {}
                             let cookie1
+                            let shopee_cookie = await page.cookies(shopee_country_url)
                             cookie1 = cookie_to_string(shopee_cookie)
 
                             data_clone.clone_id = acc.id

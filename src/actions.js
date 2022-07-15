@@ -481,6 +481,9 @@ action_order = async (page, product) => {
 
 }
 
+run_time = async () =>{
+    
+}
 module.exports = {
 
     remove_cart,
