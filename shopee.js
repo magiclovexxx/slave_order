@@ -332,7 +332,76 @@ update_order_status = async (url, cookie) => {
 
 }
 
-login_shopee = async (page, accounts, browser) => {
+login_google = async (page, accounts, browser, url) => {
+    // Click text=Login
+    login_url = url + "/buyer/login?next=https%3A%2F%2Fshopee.ph%2Flogin"
+    await page.goto(login_url)
+
+    await page.waitForTimeout(delay(6000, 5000))
+    // Click button:has-text("Google")
+    await page.waitForSelector('.social-white-google-png')
+    await page.click('.social-white-google-png')
+
+    await page.waitForTimeout(delay(11000, 9000))
+
+    let page1 = (await browser.pages())[1];
+    await page1.waitForTimeout(delay(4000, 3000))
+    //    await page1.waitForSelector('[autocomplete="username"]')
+    await page1.click('[autocomplete="username"]')
+    await page1.waitForTimeout(delay(4000, 2000))
+    await page1.type('[autocomplete="username"]', accounts.gmail_username, { delay: 100 })    // Nhập user 
+
+    await page1.click('[id="identifierNext"]')
+    await page1.waitForTimeout(delay(6000, 4000))
+    await page1.waitForSelector('[autocomplete="current-password"]')
+    await page1.type('[autocomplete="current-password"]', accounts.gmail_password, { delay: 100 })    // Nhập comment 
+    await page1.waitForTimeout(delay(3000, 2000))
+    let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
+    if (click_next.length > 0) {
+        await click_next[1].click()
+        //    await page1.waitForTimeout(delay(3000, 2000))
+    }
+
+    //    
+
+    let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
+
+    if (check_gmail_block.length) {
+        console.log("Email bị block : " + accounts[0])
+        update_error_data = {}
+        update_error_data.order_id = 0
+        update_error_data.username = accounts[0]
+        update_error_data.slave = slavenumber
+        update_error_data.error_code = 1013
+        update_error_data.product_link = ""
+        update_error_data.error_log = "Email bị block"
+        await update_error(update_error_data, 4)
+        return 2
+    }
+
+    try {
+        check_verify = await page.$$('[data-accountrecovery="false"]')
+    } catch (error) {
+        console.log(error)
+        return 0
+    }
+
+    if (check_verify.length) {
+        console.log("Email bị check point : " + accounts[0])
+        update_error_data = {}
+        update_error_data.order_id = 0
+        update_error_data.username = accounts[0]
+        update_error_data.slave = slavenumber
+        update_error_data.error_code = 1010
+        update_error_data.product_link = ""
+        update_error_data.error_message = error.message
+        update_error_data.error_log = "Email bị checkpoint"
+        await update_error(update_error_data, 4)
+        return 2
+    }
+}
+
+login_shopee = async (page, accounts, url, browser, login_type) => {
     try {
         await page.waitForTimeout(delay(4000, 3000))
 
@@ -350,79 +419,66 @@ login_shopee = async (page, accounts, browser) => {
 
 
         await page.click('.header-with-search__logo-wrapper')
-        await page.waitForTimeout(delay(4000, 3000))
+        await sleep(delay(4000, 3000))
         let check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
         console.log("Check chưa login : " + check_login.length)
 
         if (check_login.length > 0) {
+
             console.log(" ---- Chưa login tài khoản ----")
 
-            // Click text=Login
-            await check_login[0].click();
-
-            await page.waitForTimeout(delay(6000, 5000))
-
-            await page.type('[name="loginKey"]', accounts[0], { delay: 100 })    // Nhập user 
-            await page.waitForTimeout(delay(2000, 1000))
-            await page.type('[name="password"]', accounts[1], { delay: 100 })    // Nhập comment 
-            await page.waitForTimeout(delay(3000, 2000))
-
-            let button_login = await page.$x("//button[contains(text(), 'Log In')]")
-
-            if (button_login.length > 0) {
-                await button_login[0].click()
+            if (login_type == "google") {
+                await login_google(page, accounts, browser, url)
 
             } else {
-                update_error_data = {}
-                update_error_data.order_id = 0
-                update_error_data.username = accounts[0]
-                update_error_data.slave = slavenumber
-                update_error_data.error_code = 1007
-                update_error_data.product_link = ""
-                update_error_data.error_message = error.message
-                update_error_data.error_log = "Lỗi không tìm thấy nút login"
-                await api.update_error(update_error_data, 4)
-                console.log(error)
-                return 0
+                // Click text=Login
+                await check_login[0].click();
+
+                await page.waitForTimeout(delay(6000, 5000))
+
+                await page.type('[name="loginKey"]', accounts.username, { delay: 100 })    // Nhập user 
+                await page.waitForTimeout(delay(2000, 1000))
+                await page.type('[name="password"]', accounts.password, { delay: 100 })    // Nhập comment 
+                await page.waitForTimeout(delay(3000, 2000))
+
+                let button_login = await page.$x("//button[contains(text(), 'Log In')]")
+
+                if (button_login.length > 0) {
+                    await button_login[0].click()
+
+                } else {
+                    update_error_data = {}
+                    update_error_data.order_id = 0
+                    update_error_data.username = accounts.username
+                    update_error_data.slave = slavenumber
+                    update_error_data.error_code = 1007
+                    update_error_data.product_link = ""
+                    update_error_data.error_message = error.message
+                    update_error_data.error_log = "Lỗi không tìm thấy nút login"
+                    await api.update_error(update_error_data, 4)
+                    console.log(error)
+                    return 0
+                }
             }
 
             await page.waitForTimeout(delay(5000, 4000))
 
-            // let check_gmail_block = await page.$x("//span[contains(text(), 'Your account has been disabled')]");
-            // let check_gmail_verify = await page.$x("//span[contains(text(), '2-Step Verification')]");
-            // check_account_verify = await page.$x("//div[contains(text(), 'Security check')]");
-
-            // if (check_gmail_block.length || check_account_verify.length) {
-
-            //     console.log("Email bị block : " + accounts[0])
-            //     update_error_data.error_log = "Email bị block"
-            //     update_error_data.error_code = 1013
-
-            //     update_error_data = {}
-            //     update_error_data.order_id = 0
-            //     update_error_data.username = accounts[0]
-            //     update_error_data.slave = slavenumber
-
-            //     update_error_data.product_link = ""
-
-            //     await api.update_error(update_error_data, 4)
-            //     return 2
-            // }
-
+            
             check_verify = await page.$x("//div[contains(text(), 'Security check')]");
 
-            console.log("Tài khoản bị check point : " + accounts[0])
-
+          
             if (check_verify.length) {
+                console.log("Tài khoản bị check point : " + accounts.username)
+
                 if (pending_check == 1) {
                     console.log(" ---- pending check ----")
                     await sleep(39999999)
                 }
 
-                
+
                 update_error_data = {}
                 update_error_data.order_id = 0
-                update_error_data.username = accounts[0]
+                update_error_data.username = accounts.username
                 update_error_data.slave = slavenumber
                 update_error_data.error_code = 2007
                 update_error_data.product_link = ""
@@ -446,7 +502,7 @@ login_shopee = async (page, accounts, browser) => {
     } catch (error) {
         update_error_data = {}
         update_error_data.order_id = 0
-        update_error_data.username = accounts[0]
+        update_error_data.username = accounts.username
         update_error_data.slave = slavenumber
         update_error_data.error_code = 1007
         update_error_data.product_link = ""
@@ -464,6 +520,10 @@ delay = (x, y) => {
     return a
 }
 
+random_int = (x, y) => {
+    a = Math.floor(Math.random() * (x - y)) + y;
+    return a
+}
 
 function sleep(ms) {
     return new Promise((resolve) => {
@@ -733,43 +793,35 @@ runAllTime = async () => {
 
     data.forEach(async (data_for_tab, index) => {   // Foreach object Chạy song song các tab chromium
 
-        let subAccount = []
         let product_order_info = {}
-        let acc = data_for_tab.sub_account
+        let subAccount = data_for_tab.sub_account
         let shopee_url = dataShopee.shopee_url
         let shopee_full_url = "https://" + shopee_url
 
         let orders = data_for_tab.product_for_sub_account
 
-        if (orders.length == 0) {
-            console.log(moment().format("hh:mm:ss") + " - Không có dữ liệu đơn hàng")
-            await sleep(150000)
-            return
-        }
-
         let user_agent, user_lang
         console.log(moment().format("hh:mm:ss") + " - Số lượng đơn hàng mỗi lượt: " + index + " ---- " + orders.length)
 
-        subAccount[0] = acc.username
-        subAccount[2] = acc.id
-        subAccount[3] = acc.type
-        let country = acc.country
+        let country = subAccount.country
         system_order_id = 0
         try {
-            subAccount[1] = acc.password.split("\r")[0]
+            pass_check = subAccount.password.split("\r")
+
+            subAccount.password = pass_check[0]
         } catch (error) {
-            subAccount[1] = acc.password
+           
         }
 
-        if (!acc.user_agent) {
+        if (!subAccount.user_agent) {
             user_agent = randomUseragent.getRandom(function (ua) {
                 return (ua.osName === 'Windows' && ua.osVersion === "10");
             });
         } else {
-            user_agent = acc.user_agent
+            user_agent = subAccount.user_agent
         }
 
-        if (!acc.lang) {
+        if (!subAccount.lang) {
             langs = ["en-GB", "en-US"]
 
             let rand = Math.floor(Math.random() * langs.length);
@@ -778,17 +830,17 @@ runAllTime = async () => {
             console.log("Ngôn ngữ trình duyệt: " + user_lang)
 
         } else {
-            user_lang = acc.user_lang
+            user_lang = subAccount.user_lang
         }
 
-        let profileChrome = profileDir + subAccount[0]
+        let profileChrome = profileDir + subAccount.username
         // proxy = {}
         // console.log(proxy)
         let option1 = {
             user_agent: user_agent,
             proxy: proxy,
             profile_dir: profileChrome,
-            cookie: acc.cookie,
+            cookie: subAccount.cookie,
             network: slaveInfo.network,
             headless_mode: headless_mode,
             user_lang: user_lang
@@ -801,9 +853,9 @@ runAllTime = async () => {
         //  await page.emulate(m);
 
         try {
-            let cookie2 = acc.cookie
-
-            if (cookie2) {
+            let cookie2 = subAccount.cookie
+            login_type = ""
+            if (cookie2 != null) {
                 //    cookie2 = JSON.parse(cookie2)
                 cookie3 = getCookiesMap(cookie2, "." + shopee_country_1.shopee_short_url)
 
@@ -811,6 +863,9 @@ runAllTime = async () => {
 
                 await page.setCookie(...getCookiesMap(cookie2, "." + shopee_country_1.shopee_short_url))
                 console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
+                login_type = "shopee_account"
+            } else {
+                login_type = "google"
             }
         } catch (e) {
             console.log(" ---- Lỗi set coookie ----")
@@ -832,9 +887,9 @@ runAllTime = async () => {
             }
 
             // login account shopee                    
-            let checklogin = await login_shopee(page, subAccount, browser)
+            let checklogin = await login_shopee(page, subAccount, shopee_full_url, browser, login_type)
 
-            console.log(moment().format("hh:mm:ss") + " - index = " + index + " - check login account: " + subAccount[0] + " - " + checklogin)
+            console.log(moment().format("hh:mm:ss") + " - index = " + index + " - check login account: " + subAccount.username + " - " + checklogin)
 
 
 
@@ -846,8 +901,8 @@ runAllTime = async () => {
             if (checklogin == 2 || checklogin == 3) {
                 console.log(moment().format("hh:mm:ss") + " - Cập nhật tài khoản lỗi")
                 accountInfo = {
-                    user: subAccount[0],
-                    pass: subAccount[1],
+                    user: subAccount.username,
+                    pass: subAccount.password,
                 }
 
                 if (checklogin == 2) {
@@ -903,6 +958,45 @@ runAllTime = async () => {
 
                     for (let o = 0; o < max_turn; o++) {
 
+                        if (orders.length == 0) {
+                            console.log(moment().format("hh:mm:ss") + " --- Không có đơn hàng -- nuôi tk --- ")
+                            random_1 = random_int(6, 2)
+
+                            await page.goto(shopee_full_url)
+                            await page.waitForTimeout(delay(20000, 10000))
+
+                            let category = await page.$$(".home-category-list__category-grid")
+                            if(category.length){
+                                
+                                let random_2 =  random_int( (category.length-1), 0)
+                                await category[random_2].click()
+                                console.log(moment().format("hh:mm:ss") + " --- Click danh mục --- " + random_2)
+                            }
+
+                            for (let i = 0; i < random_1; i++) {
+                                await page.waitForTimeout(delay(20000, 10000))
+                                await page.keyboard.press("PageDown");
+                               
+                                console.log(moment().format("hh:mm:ss") + " --- xem danh mục --- " + i)
+                            }
+
+                            console.log("Shopee full url= " + shopee_full_url)
+
+                            cookies22 = await page.cookies(shopee_full_url)
+
+                            cookie1 = cookie_to_string(cookies22)
+                            let data_clone = {}
+                            data_clone.clone_id = subAccount.id
+                            data_clone.cookie = cookie1
+                            data_clone.action = "care_clone"
+
+                            //   console.log("cookie clone: " + shopee_cookie.length)
+                            await api.updateCookie(data_clone, 1)
+
+                            await browser.close()
+                            return
+                        }
+
                         let order_1 = orders[0]
                         console.log("ORDER id: " + order_1.id)
 
@@ -919,9 +1013,9 @@ runAllTime = async () => {
                         // Luư lịch sử thao tác
                         productForUser = orders[o]
 
-                        productForUser.username = subAccount[0]
-                        productForUser.password = subAccount[1]
-                        productForUser.clone_id = subAccount[2]
+                        productForUser.username = subAccount.username
+                        productForUser.password = subAccount.password 
+                        productForUser.clone_id = subAccount.id
                         productForUser.shopee_point = shopee_point
                         productForUser.shopee_country_url = shopee_country_url
                         productForUser.slave = slavenumber
@@ -936,14 +1030,11 @@ runAllTime = async () => {
                         }
 
                         let check_add_cart
-                        console.log("Shopee full url= " + shopee_country_url)
 
-                        cookies22 = await page.cookies(shopee_country_url)
-
-                        cookie1 = cookie_to_string(cookies22)
 
                         try {
                             await page.waitForSelector(".shopee-searchbar-input")
+
                         } catch (error) {
                             console.log(moment().format("hh:mm:ss") + " --- Loi login: ")
                             await browser.close()
@@ -967,16 +1058,12 @@ runAllTime = async () => {
                         if (o == 0) {
                             console.log("country shopee link: " + shopee_country_url)
 
-                            let data_clone = {}
+
                             let cookie1
                             let shopee_cookie = await page.cookies(shopee_country_url)
                             cookie1 = cookie_to_string(shopee_cookie)
 
-                            data_clone.clone_id = acc.id
-                            data_clone.cookie = cookie1
 
-                            //   console.log("cookie clone: " + shopee_cookie.length)
-                            await api.updateCookie(data_clone, 1)
                             await page.waitForTimeout(delay(6000, 4000))
 
                             await update_order_status(shopee_country_url, cookie1)
