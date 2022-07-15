@@ -392,17 +392,15 @@ action_order = async (page, product) => {
             await page.waitForTimeout(delay(5000, 4000))
         } else {
             check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery')]")
-            
+
         }
 
         check_not_deliver = check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery is temporarily unavailable for orders from overseas sellers due to multiple failed deliveries.')]")
-        if(check_not_deliver.length){
-            if (check_account_suppen.length) {
-                update_error_data.error_code = 2008
-                update_error_data.error_log = "Tài khoản bị tắt thanh toán khi nhận hàng"
-                console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị tắt thanh toán khi nhận hàng: " + product.username);
+        if (check_not_deliver.length) {
 
-            }
+            update_error_data.error_code = 2008
+            update_error_data.error_log = "Tài khoản bị tắt thanh toán khi nhận hàng"
+            console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị tắt thanh toán khi nhận hàng: " + product.username);
 
             await api.update_error(update_error_data, 4)
             let result = {
@@ -411,7 +409,7 @@ action_order = async (page, product) => {
             }
             return result
         }
-        
+
         if (check_btn_cod.length) {
             console.log(moment().format("hh:mm:ss") + " -- Click nút đặt đơn: ");
             let checkout = await page.$$('.stardust-button--primary')
@@ -499,7 +497,7 @@ action_order = async (page, product) => {
 
 }
 
-run_time = async () =>{
+run_time = async () => {
 
 }
 module.exports = {
@@ -507,5 +505,5 @@ module.exports = {
     remove_cart,
     action_add_cart,
     action_order,
-    
+
 }
