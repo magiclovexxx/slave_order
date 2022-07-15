@@ -31,7 +31,7 @@ let profileDir = process.env.PROFILE_DIR
 headless_mode = process.env.HEADLESS_MODE     // che do chay hien thi giao dien
 //disable_image = process.env.DISABLE_IMAGE     // k load ảnh
 disable_css = process.env.DISABLE_CSS     // k load css
-os_slave = process.env.OS     // k load css
+os_slave = process.env.OS_SLAVE     // k load css
 //process.env['NODE_TLS_REJECT_UNAUTHORIZED'] = 0
 
 if (headless_mode == "0") {
@@ -261,44 +261,44 @@ add_address = async (page, product, cookies) => {
 
 update_order_status = async (url, cookie) => {
     order_list_4 = []
-    order_list   = []
+    order_list = []
     order_list_5 = []
     order_list_3 = []
     try {
         console.log(moment().format("hh:mm:ss") + " -- update_order_status --");
         // Lấy thông tin 20 đơn hàng đầU
-       
+
         order_list_5 = await shopeeApi.get_all_order_list(url, cookie, 20, 0)
         console.log("ORder list 1: " + order_list_5.length)
         order_list.push(...order_list_5)
 
-        for(let i=1; i<20; i++){
+        for (let i = 1; i < 20; i++) {
 
-            if (order_list_5.length == 20) {        
-                order_list_5 = await shopeeApi.get_all_order_list(url, cookie, 20, 20*i)
+            if (order_list_5.length == 20) {
+                order_list_5 = await shopeeApi.get_all_order_list(url, cookie, 20, 20 * i)
                 console.log("ORder list : " + i + " -- " + order_list_5.length)
-            }else {
+            } else {
                 continue
             }
 
-            if(order_list_5.length){
+            if (order_list_5.length) {
                 order_list.push(...order_list_5)
-            } 
+            }
         }
-        
+
         console.log(" ORder list all: " + order_list.length)
         // update và check trạng thái đơn hàng trên sv xem đã có tracking_number chưa
         let order_list_2 = await api.updateOrderStatus(order_list, 3)
 
 
         if (order_list.length) {
-            order_list.forEach(async e => {   
-            //    console.log(e.status)         
+            order_list.forEach(async e => {
+                //    console.log(e.status)         
                 if (e.status == "label_order_delivered") {
-                    await comfirm_order_complete(url, cookie, e.shopee_order_id)                    
+                    await comfirm_order_complete(url, cookie, e.shopee_order_id)
                 }
-                if(e.rating == "order_tooltip_completed_buyer_not_rated_can_rate"){
-                   await shopeeApi.rating_order(url, cookie, e.shopee_order_id, e.shop_id, e.item_id, "")
+                if (e.rating == "order_tooltip_completed_buyer_not_rated_can_rate") {
+                    await shopeeApi.rating_order(url, cookie, e.shopee_order_id, e.shop_id, e.item_id, "")
                 }
             })
         }
@@ -348,10 +348,6 @@ login_shopee = async (page, accounts, browser) => {
         // console.log(x + "x" + y)
         // await page.mouse.click(x, y)
 
-        // if (pending_check == 1) {
-        //     console.log(" ---- pending check ----")
-        //     await sleep(39999)
-        // }
 
         await page.click('.header-with-search__logo-wrapper')
         await page.waitForTimeout(delay(4000, 3000))
@@ -415,8 +411,15 @@ login_shopee = async (page, accounts, browser) => {
 
             check_verify = await page.$x("//div[contains(text(), 'Security check')]");
 
+            console.log("Tài khoản bị check point : " + accounts[0])
+
             if (check_verify.length) {
-                console.log("Tài khoản bị check point : " + accounts[0])
+                if (pending_check == 1) {
+                    console.log(" ---- pending check ----")
+                    await sleep(39999999)
+                }
+
+                
                 update_error_data = {}
                 update_error_data.order_id = 0
                 update_error_data.username = accounts[0]
@@ -886,17 +889,17 @@ runAllTime = async () => {
                 if (slaveInfo.type == "order_system") {
                     console.log(moment().format("hh:mm:ss") + " --- Đặt đơn tự động ---")
 
-                    if(orders.length){
+                    if (orders.length) {
                         if (mode == "DEV") {
                             //   max_turn = 1
                             max_turn = orders.length
                         } else {
                             max_turn = orders.length
                         }
-                    }else{
+                    } else {
                         max_turn = 1
                     }
-                   
+
 
                     for (let o = 0; o < max_turn; o++) {
 
@@ -963,7 +966,7 @@ runAllTime = async () => {
                         await page.waitForTimeout(delay(3000, 2000))
                         if (o == 0) {
                             console.log("country shopee link: " + shopee_country_url)
-                            
+
                             let data_clone = {}
                             let cookie1
                             let shopee_cookie = await page.cookies(shopee_country_url)
@@ -971,13 +974,13 @@ runAllTime = async () => {
 
                             data_clone.clone_id = acc.id
                             data_clone.cookie = cookie1
-                           
+
                             //   console.log("cookie clone: " + shopee_cookie.length)
                             await api.updateCookie(data_clone, 1)
                             await page.waitForTimeout(delay(6000, 4000))
 
                             await update_order_status(shopee_country_url, cookie1)
-                            
+
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
@@ -1060,7 +1063,7 @@ runAllTime = async () => {
                             await browser.close()
                             return
                         }
-                        
+
 
                         if (check_product_exit === "Có tồn tại") {
                             try {
@@ -1132,7 +1135,7 @@ runAllTime = async () => {
                     product_order_info.products_name = products_name
                     product_order_info.voucher = voucher
 
-                    
+
 
                     let check_2 = await actionShopee.action_order(page, product_order_info)
                     product_order_info.action = "order_product"
