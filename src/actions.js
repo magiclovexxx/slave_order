@@ -395,7 +395,7 @@ action_order = async (page, product) => {
 
         }
 
-        check_not_deliver = check_btn_cod = await page.$x("//div[contains(text(), 'Cash on Delivery is temporarily unavailable for orders from overseas sellers due to multiple failed deliveries.')]")
+        check_not_deliver = await page.$x("//div[contains(text(), 'Cash on Delivery is temporarily unavailable for orders from overseas sellers due to multiple failed deliveries.')]")
         if (check_not_deliver.length) {
 
             update_error_data.error_code = 2008
