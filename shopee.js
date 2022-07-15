@@ -1050,10 +1050,17 @@ runAllTime = async () => {
                         });
 
 
-                        await page.goto(productForUser.product_link, {
-                            waitUntil: "networkidle0",
-                            timeout: 50000
-                        });
+                        try {
+                            await page.goto(productForUser.product_link, {
+                                waitUntil: "networkidle0",
+                                timeout: 50000
+                            });
+                        } catch (error) {
+                            console.log(error)
+                            await browser.close()
+                            return
+                        }
+                        
 
                         if (check_product_exit === "Có tồn tại") {
                             try {
@@ -1197,6 +1204,7 @@ runAllTime = async () => {
             }
         } catch (error) {
             console.log(error)
+            shell.exec('pm2 restart all');
             return
         }
     })
