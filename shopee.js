@@ -434,7 +434,7 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
                 // Click text=Login
                 await check_login[0].click();
 
-                await page.waitForTimeout(delay(6000, 5000))
+                await sleep(delay(6000, 5000))
 
                 await page.type('[name="loginKey"]', accounts.username, { delay: 100 })    // Nhập user 
                 await page.waitForTimeout(delay(2000, 1000))
@@ -463,17 +463,18 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
 
             await page.waitForTimeout(delay(5000, 4000))
 
-            
+
             check_verify = await page.$x("//div[contains(text(), 'Security check')]");
 
-          
+
             if (check_verify.length) {
                 console.log("Tài khoản bị check point : " + accounts.username)
 
-                if (pending_check == 1) {
-                    console.log(" ---- pending check ----")
-                    await sleep(39999999)
-                }
+                // if (
+                    //  == 1) {
+                //     console.log(" ---- pending check ----")
+                //     await sleep(39999999)
+                // }
 
 
                 update_error_data = {}
@@ -490,11 +491,11 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
 
         }
 
-        await page.waitForTimeout(delay(6000, 4000))
+        await sleep(delay(6000, 4000))
         check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
 
         if (check_login.length == 0) {
-            console.log(" ---- check login thành công ----" + check_login.length)
+            console.log(" ---- login thành công ----")
             return 1
         } else {
             return 4 // Lỗi đăng nhập
@@ -810,7 +811,7 @@ runAllTime = async () => {
 
             subAccount.password = pass_check[0]
         } catch (error) {
-           
+
         }
 
         if (!subAccount.user_agent) {
@@ -855,7 +856,7 @@ runAllTime = async () => {
         try {
             let cookie2 = subAccount.cookie
             login_type = ""
-            if (cookie2 != null) {
+            if (cookie2.length > 100) {
                 //    cookie2 = JSON.parse(cookie2)
                 cookie3 = getCookiesMap(cookie2, "." + shopee_country_1.shopee_short_url)
 
@@ -937,7 +938,11 @@ runAllTime = async () => {
                 return false
             }
 
-
+            // ------------ remove cart ------------------//
+            if (pending_check == 1) {
+                console.log(" ---- pending check ----")
+                await sleep(9999999)
+            }
 
             if (checklogin == 1) {
 
@@ -966,9 +971,9 @@ runAllTime = async () => {
                             await page.waitForTimeout(delay(20000, 10000))
 
                             let category = await page.$$(".home-category-list__category-grid")
-                            if(category.length){
-                                
-                                let random_2 =  random_int( (category.length-1), 0)
+                            if (category.length) {
+
+                                let random_2 = random_int((category.length - 1), 0)
                                 await category[random_2].click()
                                 console.log(moment().format("hh:mm:ss") + " --- Click danh mục --- " + random_2)
                             }
@@ -976,7 +981,7 @@ runAllTime = async () => {
                             for (let i = 0; i < random_1; i++) {
                                 await page.waitForTimeout(delay(20000, 10000))
                                 await page.keyboard.press("PageDown");
-                               
+
                                 console.log(moment().format("hh:mm:ss") + " --- xem danh mục --- " + i)
                             }
 
@@ -1001,20 +1006,17 @@ runAllTime = async () => {
                         console.log("ORDER id: " + order_1.id)
 
                         let product_link = order_1.product_link
-                        let get_link = product_link.split("/")
 
                         let shopee_country_url = shopee_full_url
 
                         let productForUser                     // Mảng chứa thông tin sản phẩm, từ khoá cần tương tác
-                        let check_like = 0
-                        let check_follow = 0
 
                         let check_product_exit = "Có tồn tại"
                         // Luư lịch sử thao tác
                         productForUser = orders[o]
 
                         productForUser.username = subAccount.username
-                        productForUser.password = subAccount.password 
+                        productForUser.password = subAccount.password
                         productForUser.clone_id = subAccount.id
                         productForUser.shopee_point = shopee_point
                         productForUser.shopee_country_url = shopee_country_url
@@ -1041,11 +1043,7 @@ runAllTime = async () => {
                             return
                         }
 
-                        // ------------ remove cart ------------------//
-                        // if (pending_check == 1) {
-                        //     console.log(" ---- pending check ----")
-                        //     await sleep(9999999)
-                        // }
+
 
                         let delete_cart = await actionShopee.remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
@@ -1063,6 +1061,12 @@ runAllTime = async () => {
                             let shopee_cookie = await page.cookies(shopee_country_url)
                             cookie1 = cookie_to_string(shopee_cookie)
 
+                            let data_clone = {}
+                            data_clone.clone_id = subAccount.id
+                            data_clone.cookie = cookie1
+                            data_clone.action = "care_clone"
+
+                            await api.updateCookie(data_clone, 1)
 
                             await page.waitForTimeout(delay(6000, 4000))
 
@@ -1197,7 +1201,7 @@ runAllTime = async () => {
 
                                     if (check_1) {
 
-                                        console.log(moment().format("hh:mm:ss") + "- Bỏ giỏ ok- " + productForUser.product_id + " : " + check_add_cart)
+                                    //    console.log(moment().format("hh:mm:ss") + "- Bỏ giỏ ok- " + productForUser.product_id + " : " + check_add_cart)
                                     } else {
                                         console.log(moment().format("hh:mm:ss") + "- Có lỗi khi chọn sản phẩm - " + productForUser.product_id + " : " + check_add_cart)
                                         await browser.close()
@@ -1281,10 +1285,10 @@ runAllTime = async () => {
                     await api.updateHistory(product_order_info, 3)
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
                 }
-                if (pending_check == 1) {
-                    console.log(" ---- pending check ----")
-                    await sleep(9999999)
-                }
+                // if (pending_check == 1) {
+                //     console.log(" ---- pending check ----")
+                //     await sleep(9999999)
+                // }
                 //    await sleep(999999);
                 await browser.close();
                 if (os_slave == "LINUX") {
