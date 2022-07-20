@@ -363,6 +363,10 @@ login_google = async (page, accounts, browser, url) => {
     }
 
     //    
+    if (pending_check == 1) {
+        console.log(" ---- pending check ----")
+        await sleep(9999999)
+    }
 
     let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
 
@@ -438,7 +442,7 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
 
                 await page.type('[name="loginKey"]', accounts.username, { delay: 100 })    // Nhập user 
                 await page.waitForTimeout(delay(2000, 1000))
-                await page.type('[name="password"]', accounts.password, { delay: 100 })    // Nhập comment 
+                await page.type('[name="password"]', accounts.password, { delay: 100 })    // Nhập pass 
                 await page.waitForTimeout(delay(3000, 2000))
 
                 let button_login = await page.$x("//button[contains(text(), 'Log In')]")
@@ -461,21 +465,33 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
                 }
             }
 
-            await page.waitForTimeout(delay(5000, 4000))
+            await page.waitForTimeout(delay(10000, 8000))
 
+            
+
+            console.log(moment().format("hh:mm:ss") + " - Check Security account")
+
+            check_verify_pass = await page.$x("//div[contains(text(), 'Verify by Password')]");
+
+            if (check_verify_pass.length) {
+                console.log(moment().format("hh:mm:ss") + " - Verify password")
+
+                await check_verify_pass[0].click()
+                await sleep(delay(5000, 4000))
+                await page.type('[name="password"]', accounts.password, { delay: 100 })    // Nhập pass 
+                await sleep(delay(5000, 4000))
+
+                btn_confirm = await page.$x("//button[contains(text(), 'CONFIRM')]");
+
+                if (btn_confirm.length) {
+                    await btn_confirm[0].click()
+                }
+            }
 
             check_verify = await page.$x("//div[contains(text(), 'Security check')]");
 
-
             if (check_verify.length) {
                 console.log("Tài khoản bị check point : " + accounts.username)
-
-                // if (
-                    //  == 1) {
-                //     console.log(" ---- pending check ----")
-                //     await sleep(39999999)
-                // }
-
 
                 update_error_data = {}
                 update_error_data.order_id = 0
@@ -866,6 +882,7 @@ runAllTime = async () => {
                 console.log(moment().format("hh:mm:ss") + " - Setcookie thành công")
                 login_type = "shopee_account"
             } else {
+                console.log(" ---- LOGIN GOOGLE ----")
                 login_type = "google"
             }
         } catch (e) {
@@ -941,8 +958,9 @@ runAllTime = async () => {
             // ------------ remove cart ------------------//
             if (pending_check == 1) {
                 console.log(" ---- pending check ----")
-                await sleep(9999999)
+                await sleep(39999999)
             }
+
 
             if (checklogin == 1) {
 
@@ -1201,7 +1219,7 @@ runAllTime = async () => {
 
                                     if (check_1) {
 
-                                    //    console.log(moment().format("hh:mm:ss") + "- Bỏ giỏ ok- " + productForUser.product_id + " : " + check_add_cart)
+                                        //    console.log(moment().format("hh:mm:ss") + "- Bỏ giỏ ok- " + productForUser.product_id + " : " + check_add_cart)
                                     } else {
                                         console.log(moment().format("hh:mm:ss") + "- Có lỗi khi chọn sản phẩm - " + productForUser.product_id + " : " + check_add_cart)
                                         await browser.close()
