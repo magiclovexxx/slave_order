@@ -163,7 +163,7 @@ action_add_cart = async (page, product) => {
 
         check_error_add = await page.$x("//div[contains(text(), 'Please select product variation first')]")
 
-        if (check_error_add.length > 1) {
+        if (check_error_add.length) {
             console.log(moment().format("hh:mm:ss") + " Lỗi khi chọn phân loại hàng, sai phân loại, biến thể");
             update_error_data = {}
             update_error_data.order_id = product.id
