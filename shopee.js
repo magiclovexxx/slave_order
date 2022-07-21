@@ -356,11 +356,11 @@ login_google = async (page, accounts, browser, url) => {
         await page1.waitForTimeout(delay(6000, 4000))
         await page1.waitForSelector('[autocomplete="current-password"]')
         await page1.type('[autocomplete="current-password"]', accounts.gmail_password, { delay: 100 })    // Nhập comment 
-        await page1.waitForTimeout(delay(3000, 2000))
+        await sleep(delay(3000, 2000))
         let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
         if (click_next.length > 0) {
             await click_next[1].click()
-            await page1.waitForTimeout(delay(5000, 4000))
+            await sleep(delay(5000, 4000))
         }
 
         //    
@@ -371,18 +371,18 @@ login_google = async (page, accounts, browser, url) => {
         if (check_gmail_khoi_phuc.length) {
             console.log("-- Nhap email khoi phuc --")
             await check_gmail_khoi_phuc[0].click()
-            await page1.waitForTimeout(delay(5000, 4000))
+            await sleep(delay(5000, 4000))
 
             await page1.click('[name="knowledgePreregisteredEmailResponse"]')
-            await page1.waitForTimeout(delay(2000, 1000))
+            await sleep(delay(2000, 1000))
             await page1.type('[name="knowledgePreregisteredEmailResponse"]', accounts.mail_khoi_phuc, { delay: 100 })    // Nhập comment
-            await page1.waitForTimeout(delay(3000, 2000))
+            await sleep(delay(3000, 2000))
 
 
             let click_next = await page1.$x("//div[contains(text(), 'Tiếp theo')]");
             if (click_next.length > 0) {
                 await click_next[0].click()
-                await page1.waitForTimeout(delay(3000, 2000))
+                await sleep(delay(3000, 2000))
             }
         }
 
