@@ -379,7 +379,7 @@ login_google = async (page, accounts, browser, url) => {
             await sleep(delay(3000, 2000))
 
 
-            let click_next = await page1.$x("//div[contains(text(), 'Tiếp theo')]");
+            let click_next = await page1.$x("//span[contains(text(), 'Tiếp theo')]");
             if (click_next.length > 0) {
                 await click_next[0].click()
                 await sleep(delay(3000, 2000))
