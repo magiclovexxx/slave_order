@@ -334,97 +334,102 @@ update_order_status = async (url, cookie) => {
 
 login_google = async (page, accounts, browser, url) => {
     // Click text=Login
-    login_url = url + "/buyer/login?next=https%3A%2F%2Fshopee.ph%2Flogin"
-    await page.goto(login_url)
-
-    await page.waitForTimeout(delay(6000, 5000))
-    // Click button:has-text("Google")
-    await page.waitForSelector('.social-white-google-png')
-    await page.click('.social-white-google-png')
-
-    await page.waitForTimeout(delay(11000, 9000))
-
-    let page1 = (await browser.pages())[1];
-    await page1.waitForTimeout(delay(4000, 3000))
-    //    await page1.waitForSelector('[autocomplete="username"]')
-    await page1.click('[autocomplete="username"]')
-    await page1.waitForTimeout(delay(4000, 2000))
-    await page1.type('[autocomplete="username"]', accounts.gmail_username, { delay: 100 })    // Nhập user 
-
-    await page1.click('[id="identifierNext"]')
-    await page1.waitForTimeout(delay(6000, 4000))
-    await page1.waitForSelector('[autocomplete="current-password"]')
-    await page1.type('[autocomplete="current-password"]', accounts.gmail_password, { delay: 100 })    // Nhập comment 
-    await page1.waitForTimeout(delay(3000, 2000))
-    let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
-    if (click_next.length > 0) {
-        await click_next[1].click()
-        await page1.waitForTimeout(delay(5000, 4000))
-    }
-
-    //    
-
-    console.log("-- check email khoi phuc --")
-
-    let check_gmail_khoi_phuc = await page1.$x("//div[contains(text(), 'Xác nhận email khôi phục của bạn')]");
-    if (check_gmail_khoi_phuc.length) {
-        console.log("-- Nhap email khoi phuc --")
-        await check_gmail_khoi_phuc[0].click()
-        await page1.waitForTimeout(delay(5000, 4000))
-
-        await page1.click('[name="knowledgePreregisteredEmailResponse"]')
-        await page1.waitForTimeout(delay(2000, 1000))
-        await page1.type('[name="knowledgePreregisteredEmailResponse"]', accounts.mail_khoi_phuc, { delay: 100 })    // Nhập comment
-        await page1.waitForTimeout(delay(3000, 2000))
-        
-        
-        let click_next = await page1.$x("//div[contains(text(), 'Tiếp theo')]");
-        if (click_next.length > 0) {
-            await click_next[0].click()
-            await page1.waitForTimeout(delay(3000, 2000))
-        }
-    }
-
-    if (pending_check == 1) {
-        console.log(" ---- pending check ----")
-        await sleep(9999999)
-    }
-
-    let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
-
-    if (check_gmail_block.length) {
-        console.log("Email bị block : " + accounts[0])
-        update_error_data = {}
-        update_error_data.order_id = 0
-        update_error_data.username = accounts[0]
-        update_error_data.slave = slavenumber
-        update_error_data.error_code = 1013
-        update_error_data.product_link = ""
-        update_error_data.error_log = "Email bị block"
-        await update_error(update_error_data, 4)
-        return 2
-    }
-
     try {
-        check_verify = await page.$$('[data-accountrecovery="false"]')
+        login_url = url + "/buyer/login?next=https%3A%2F%2Fshopee.ph%2Flogin"
+        await page.goto(login_url)
+
+        await page.waitForTimeout(delay(6000, 5000))
+        // Click button:has-text("Google")
+        await page.waitForSelector('.social-white-google-png')
+        await page.click('.social-white-google-png')
+
+        await page.waitForTimeout(delay(11000, 9000))
+
+        let page1 = (await browser.pages())[1];
+        await page1.waitForTimeout(delay(4000, 3000))
+        //    await page1.waitForSelector('[autocomplete="username"]')
+        await page1.click('[autocomplete="username"]')
+        await page1.waitForTimeout(delay(4000, 2000))
+        await page1.type('[autocomplete="username"]', accounts.gmail_username, { delay: 100 })    // Nhập user 
+
+        await page1.click('[id="identifierNext"]')
+        await page1.waitForTimeout(delay(6000, 4000))
+        await page1.waitForSelector('[autocomplete="current-password"]')
+        await page1.type('[autocomplete="current-password"]', accounts.gmail_password, { delay: 100 })    // Nhập comment 
+        await page1.waitForTimeout(delay(3000, 2000))
+        let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
+        if (click_next.length > 0) {
+            await click_next[1].click()
+            await page1.waitForTimeout(delay(5000, 4000))
+        }
+
+        //    
+
+        console.log("-- check email khoi phuc --")
+
+        let check_gmail_khoi_phuc = await page1.$x("//div[contains(text(), 'Xác nhận email khôi phục của bạn')]");
+        if (check_gmail_khoi_phuc.length) {
+            console.log("-- Nhap email khoi phuc --")
+            await check_gmail_khoi_phuc[0].click()
+            await page1.waitForTimeout(delay(5000, 4000))
+
+            await page1.click('[name="knowledgePreregisteredEmailResponse"]')
+            await page1.waitForTimeout(delay(2000, 1000))
+            await page1.type('[name="knowledgePreregisteredEmailResponse"]', accounts.mail_khoi_phuc, { delay: 100 })    // Nhập comment
+            await page1.waitForTimeout(delay(3000, 2000))
+
+
+            let click_next = await page1.$x("//div[contains(text(), 'Tiếp theo')]");
+            if (click_next.length > 0) {
+                await click_next[0].click()
+                await page1.waitForTimeout(delay(3000, 2000))
+            }
+        }
+
+        if (pending_check == 1) {
+            console.log(" ---- pending check ----")
+            await sleep(9999999)
+        }
+
+        let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
+
+        if (check_gmail_block.length) {
+            console.log("Email bị block : " + accounts[0])
+            update_error_data = {}
+            update_error_data.order_id = 0
+            update_error_data.username = accounts[0]
+            update_error_data.slave = slavenumber
+            update_error_data.error_code = 1013
+            update_error_data.product_link = ""
+            update_error_data.error_log = "Email bị block"
+            await update_error(update_error_data, 4)
+            return 2
+        }
+
+        try {
+            check_verify = await page.$$('[data-accountrecovery="false"]')
+        } catch (error) {
+            console.log(error)
+            return 0
+        }
+
+        if (check_verify.length) {
+            console.log("Email bị check point : " + accounts[0])
+            update_error_data = {}
+            update_error_data.order_id = 0
+            update_error_data.username = accounts[0]
+            update_error_data.slave = slavenumber
+            update_error_data.error_code = 1010
+            update_error_data.product_link = ""
+            update_error_data.error_message = error.message
+            update_error_data.error_log = "Email bị checkpoint"
+            await update_error(update_error_data, 4)
+            return 2
+        }
     } catch (error) {
         console.log(error)
-        return 0
     }
 
-    if (check_verify.length) {
-        console.log("Email bị check point : " + accounts[0])
-        update_error_data = {}
-        update_error_data.order_id = 0
-        update_error_data.username = accounts[0]
-        update_error_data.slave = slavenumber
-        update_error_data.error_code = 1010
-        update_error_data.product_link = ""
-        update_error_data.error_message = error.message
-        update_error_data.error_log = "Email bị checkpoint"
-        await update_error(update_error_data, 4)
-        return 2
-    }
 }
 
 login_shopee = async (page, accounts, url, browser, login_type) => {
