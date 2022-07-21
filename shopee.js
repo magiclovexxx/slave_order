@@ -363,6 +363,21 @@ login_google = async (page, accounts, browser, url) => {
     }
 
     //    
+
+
+    let check_gmail_khoi_phuc = await page1.$x("//span[contains(text(), 'Xác nhận email khôi phục của ')]");
+    if (check_gmail_khoi_phuc.length) {
+        await check_gmail_khoi_phuc[0].click()
+
+        await page1.type('[type="email"]', accounts.gmail_khoi_phuc, { delay: 100 })    // Nhập comment
+        await page1.waitForTimeout(delay(3000, 2000))
+        let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
+        if (click_next.length > 0) {
+            await click_next[1].click()
+            //    await page1.waitForTimeout(delay(3000, 2000))
+        }
+    }
+
     if (pending_check == 1) {
         console.log(" ---- pending check ----")
         await sleep(9999999)
@@ -1332,7 +1347,7 @@ runAllTime = async () => {
             shell.exec('pm2 flush');
             shell.exec('rm ~/.pm2/pm2.log');
             shell.exec('pm2 restart all');
-            
+
             return
         }
     })
