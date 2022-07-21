@@ -386,12 +386,9 @@ login_google = async (page, accounts, browser, url) => {
             }
         }
 
-        if (pending_check == 1) {
-            console.log(" ---- pending check ----")
-            await sleep(9999999)
-        }
+  
 
-        let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
+        let check_gmail_block = await page1.$x("//span[contains(text(), 'Tài khoản của bạn đã bị vô hiệu hoá')]");
 
         if (check_gmail_block.length) {
             console.log("Email bị block : " + accounts[0])
@@ -434,7 +431,7 @@ login_google = async (page, accounts, browser, url) => {
 
 login_shopee = async (page, accounts, url, browser, login_type) => {
     try {
-        await page.waitForTimeout(delay(4000, 3000))
+        await sleep(delay(4000, 3000))
 
         let linkHandlers = await page.$x("//button[contains(text(), 'English')]");
         let check_verify = 0
@@ -442,7 +439,7 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
             await linkHandlers[0].click();
         }
 
-        await page.waitForTimeout(delay(4000, 3000))
+        await sleep(delay(4000, 3000))
         // let x = Math.floor(Math.random() * 200);
         // let y =Math.floor(Math.random() * 50);
         // console.log(x + "x" + y)
@@ -468,9 +465,9 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
                 await sleep(delay(6000, 5000))
 
                 await page.type('[name="loginKey"]', accounts.username, { delay: 100 })    // Nhập user 
-                await page.waitForTimeout(delay(2000, 1000))
+                await sleep(delay(2000, 1000))
                 await page.type('[name="password"]', accounts.password, { delay: 100 })    // Nhập pass 
-                await page.waitForTimeout(delay(3000, 2000))
+                await sleep(delay(3000, 2000))
 
                 let button_login = await page.$x("//button[contains(text(), 'Log In')]")
 
@@ -492,9 +489,7 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
                 }
             }
 
-            await page.waitForTimeout(delay(10000, 8000))
-
-
+            await sleep(delay(10000, 8000))
 
             console.log(moment().format("hh:mm:ss") + " - Check Security account")
 
@@ -936,8 +931,6 @@ runAllTime = async () => {
 
             console.log(moment().format("hh:mm:ss") + " - index = " + index + " - check login account: " + subAccount.username + " - " + checklogin)
 
-
-
             if (checklogin == 0 || checklogin == 4) {
                 await browser.close();
                 return
@@ -1099,7 +1092,10 @@ runAllTime = async () => {
                             return
                         }
 
-
+                        if (pending_check == 1) {
+                            console.log(" ---- pending check ----")
+                            await sleep(9999999)
+                        }
 
                         let delete_cart = await actionShopee.remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
