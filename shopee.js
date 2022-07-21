@@ -467,7 +467,7 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
 
             await page.waitForTimeout(delay(10000, 8000))
 
-            
+
 
             console.log(moment().format("hh:mm:ss") + " - Check Security account")
 
@@ -1311,12 +1311,17 @@ runAllTime = async () => {
                 await browser.close();
                 if (os_slave == "LINUX") {
                     console.log(moment().format("hh:mm:ss") + " PM2 restart ")
+                    shell.exec('pm2 flush');
+                    shell.exec('rm ~/.pm2/pm2.log');
                     shell.exec('pm2 restart all');
                 }
             }
         } catch (error) {
             console.log(error)
+            shell.exec('pm2 flush');
+            shell.exec('rm ~/.pm2/pm2.log');
             shell.exec('pm2 restart all');
+            
             return
         }
     })
