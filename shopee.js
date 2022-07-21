@@ -364,30 +364,31 @@ login_google = async (page, accounts, browser, url) => {
 
     //    
 
-console.log("-- check email khoi phuc --")
+    console.log("-- check email khoi phuc --")
 
     let check_gmail_khoi_phuc = await page1.$x("//div[contains(text(), 'Xác nhận email khôi phục của bạn')]");
     if (check_gmail_khoi_phuc.length) {
-console.log("-- Nhap email khoi phuc --")
+        console.log("-- Nhap email khoi phuc --")
         await check_gmail_khoi_phuc[0].click()
-await page1.waitForTimeout(delay(5000, 4000))
+        await page1.waitForTimeout(delay(5000, 4000))
 
-await page1.click('[name="knowledgePreregisteredEmailResponse"]')
-await page1.waitForTimeout(delay(2000, 1000))
+        await page1.click('[name="knowledgePreregisteredEmailResponse"]')
+        await page1.waitForTimeout(delay(2000, 1000))
         await page1.type('[name="knowledgePreregisteredEmailResponse"]', accounts.mail_khoi_phuc, { delay: 100 })    // Nhập comment
         await page1.waitForTimeout(delay(3000, 2000))
-if (pending_check == 1) {
-        console.log(" ---- pending check ----")
-        await sleep(9999999)
-    }
-        let click_next = await page1.$x("//div[contains(text(), '')]");
+        
+        
+        let click_next = await page1.$x("//div[contains(text(), 'Tiếp theo')]");
         if (click_next.length > 0) {
             await click_next[1].click()
-            //    await page1.waitForTimeout(delay(3000, 2000))
+            await page1.waitForTimeout(delay(3000, 2000))
         }
     }
 
-    
+    if (pending_check == 1) {
+        console.log(" ---- pending check ----")
+        await sleep(9999999)
+    }
 
     let check_gmail_block = await page1.$x("//span[contains(text(), 'Your account has been disabled')]");
 
