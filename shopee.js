@@ -1058,6 +1058,17 @@ runAllTime = async () => {
                         } catch (error) {
                             console.log(moment().format("hh:mm:ss") + " --- Loi login: ")
                             await browser.close()
+                            update_error_data = {}
+                            update_error_data.order_id = productForUser.id
+                            update_error_data.username = productForUser.username
+                            update_error_data.slave = productForUser.slave
+                            update_error_data.error_code = 1019
+                            update_error_data.product_link = productForUser.product_link
+                            update_error_data.error_message = error.message
+                            update_error_data.error_log = "Có lỗi hệ thống khi thêm địa chỉ, vui lòng kiểm tra lại"
+                            console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi thêm địa chỉ ");
+                            console.log(error)
+                            await api.update_error(update_error_data, 4)
                             return
                         }
 
