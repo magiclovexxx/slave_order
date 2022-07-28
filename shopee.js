@@ -56,6 +56,7 @@ if (mode === "DEV") {
 }
 logs = 1
 
+var last_request_success = moment();
 
 add_address = async (page, product, cookies) => {
     try {
@@ -386,7 +387,7 @@ login_google = async (page, accounts, browser, url) => {
             }
         }
 
-  
+
 
         let check_gmail_block = await page1.$x("//span[contains(text(), 'Tài khoản của bạn đã bị vô hiệu hoá')]");
 
@@ -743,6 +744,8 @@ runAllTime = async () => {
 
     // Lấy dữ liệu từ từ khoá từ sv
     console.log(moment().format("hh:mm:ss") + " - Lấy dữ liệu ban đầu từ server")
+    last_request_success = moment();
+
     await axios.get(get_data_shopee_url, {
         timeout: 60000,
     })
@@ -829,8 +832,10 @@ runAllTime = async () => {
         return;
     }
 
+    last_request_success = moment();
 
     data.forEach(async (data_for_tab, index) => {   // Foreach object Chạy song song các tab chromium
+        last_request_success = moment();
 
         let product_order_info = {}
         let subAccount = data_for_tab.sub_account
@@ -885,13 +890,17 @@ runAllTime = async () => {
             user_lang: user_lang
         }
 
+        last_request_success = moment();
         let browser = await gen_browser(option1)
+
+        last_request_success = moment();
         let page = await gen_page(browser, option1)
         //   await page.evaluateOnNewDocument(preloadFile);
 
         //  await page.emulate(m);
 
         try {
+            last_request_success = moment();
             let cookie2 = subAccount.cookie
             login_type = ""
             if (cookie2.length > 100) {
@@ -916,7 +925,7 @@ runAllTime = async () => {
 
 
         try {
-
+            last_request_success = moment();
             console.log(moment().format("hh:mm:ss") + " - Load: " + shopee_full_url)
             console.log(moment().format("hh:mm:ss") + " - Check bắt đầu đặt đơn: " + check_order_complete)
             try {
@@ -926,6 +935,7 @@ runAllTime = async () => {
                 return
             }
 
+            last_request_success = moment();
             // login account shopee                    
             let checklogin = await login_shopee(page, subAccount, shopee_full_url, browser, login_type)
 
@@ -953,6 +963,7 @@ runAllTime = async () => {
                     accountInfo.status = 3
                 }
 
+                last_request_success = moment();
                 await axios.get(shopee_account_update_url, {
                     params: {
                         data: {
@@ -999,18 +1010,22 @@ runAllTime = async () => {
                             console.log(moment().format("hh:mm:ss") + " --- Không có đơn hàng -- nuôi tk --- ")
                             random_1 = random_int(6, 2)
 
+                            last_request_success = moment();
                             await page.goto(shopee_full_url)
                             await page.waitForTimeout(delay(20000, 10000))
 
+                            last_request_success = moment();
                             let category = await page.$$(".home-category-list__category-grid")
                             if (category.length) {
 
+                                last_request_success = moment();
                                 let random_2 = random_int((category.length - 1), 0)
                                 await category[random_2].click()
                                 console.log(moment().format("hh:mm:ss") + " --- Click danh mục --- " + random_2)
                             }
 
                             for (let i = 0; i < random_1; i++) {
+                                last_request_success = moment();
                                 await page.waitForTimeout(delay(20000, 10000))
                                 await page.keyboard.press("PageDown");
 
@@ -1018,7 +1033,7 @@ runAllTime = async () => {
                             }
 
                             console.log("Shopee full url= " + shopee_full_url)
-
+                            last_request_success = moment();
                             cookies22 = await page.cookies(shopee_full_url)
 
                             cookie1 = cookie_to_string(cookies22)
@@ -1028,6 +1043,7 @@ runAllTime = async () => {
                             data_clone.action = "care_clone"
 
                             //   console.log("cookie clone: " + shopee_cookie.length)
+                            last_request_success = moment();
                             await api.updateCookie(data_clone, 1)
 
                             await browser.close()
@@ -1055,6 +1071,7 @@ runAllTime = async () => {
                         productForUser.slave = slavenumber
 
                         productForUser.ip = proxy.proxy_ip;
+                        last_request_success = moment();
                         productForUser.local_ip = ip_address.address()
 
                         let shopInfo3 = {
@@ -1067,6 +1084,7 @@ runAllTime = async () => {
 
 
                         try {
+                            last_request_success = moment();
                             await page.waitForSelector(".shopee-searchbar-input")
 
                         } catch (error) {
@@ -1082,12 +1100,14 @@ runAllTime = async () => {
                             update_error_data.error_log = "Có lỗi hệ thống khi thêm địa chỉ, vui lòng kiểm tra lại"
                             console.log(moment().format("hh:mm:ss") + " -- Lỗi hệ thống khi thêm địa chỉ ");
                             console.log(error)
+                            last_request_success = moment();
                             await api.update_error(update_error_data, 4)
                             return
                         }
 
                        
 
+                        last_request_success = moment();
                         let delete_cart = await actionShopee.remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
                         if (delete_cart == 0) {
@@ -1109,10 +1129,13 @@ runAllTime = async () => {
                             data_clone.cookie = cookie1
                             data_clone.action = "care_clone"
 
+                            last_request_success = moment();
                             await api.updateCookie(data_clone, 1)
 
                             await page.waitForTimeout(delay(6000, 4000))
 
+                            last_request_success = moment();
+                            last_request_success = moment();
                             await update_order_status(shopee_country_url, cookie1)
 
 
@@ -1137,6 +1160,7 @@ runAllTime = async () => {
 
                             try {
                                 if (checkUrlShop.length > 1) {
+                                    last_request_success = moment();
                                     console.log("-- Sự kiện lấy thông tin shop --")
                                     productInfo1 = await response.json()
                                     productInfo2 = productInfo1.data
@@ -1156,7 +1180,7 @@ runAllTime = async () => {
                             // check add card
                             let check_add_to_cart = url.split("api/v4/cart/add_to")
                             if (check_add_to_cart.length > 1) {
-
+                                last_request_success = moment();
                                 let check = await response.json()
                                 if (check.error == 0) {
                                     check_add_cart = true
@@ -1167,13 +1191,14 @@ runAllTime = async () => {
 
                             let check_order = url.split("api/v4/checkout/place_or")
                             if (check_order.length > 1) {
+                                last_request_success = moment();
                                 check_order_complete = true
                                 console.log(moment().format("hh:mm:ss") + " - Kiểm tra đặt hàng: " + check_order_complete)
                             }
 
                             check_link_san_pham = url.split("item/get?itemid=" + productForUser.product_id)
                             if (check_link_san_pham.length > 1) {
-
+                                last_request_success = moment();
                                 try {
                                     console.log(moment().format("hh:mm:ss") + " - Lấy thông tin sản phẩm")
                                     let productInfo1 = await response.json()
@@ -1193,6 +1218,7 @@ runAllTime = async () => {
 
 
                         try {
+                            last_request_success = moment();
                             await page.goto(productForUser.product_link, {
                                 waitUntil: "networkidle0",
                                 timeout: 50000
@@ -1241,10 +1267,12 @@ runAllTime = async () => {
                                 await page.waitForTimeout(delay(4000, 2000))
 
                                 // if (options.add_cart) {
+                                last_request_success = moment();
                                 check_point = await api.check_point_hour(productForUser.uid)
                                 if (check_point) {
                                     random_add_cart = Math.floor(Math.random() * 4);
 
+                                    last_request_success = moment();
                                     let check_1 = await actionShopee.action_add_cart(page, productForUser)
 
                                     if (check_1) {
@@ -1275,7 +1303,7 @@ runAllTime = async () => {
                     product_order_info.voucher = voucher
 
 
-
+                    last_request_success = moment();
                     let check_2 = await actionShopee.action_order(page, product_order_info)
                     product_order_info.action = "order_product"
 
@@ -1289,6 +1317,7 @@ runAllTime = async () => {
                             //    await sleep(delay(6000, 5000))
                             console.log(moment().format("hh:mm:ss") + " - Đặt đơn thành công")
                             product_order_info.result = "success"
+                            last_request_success = moment();
                             await api.updatePoint(product_order_info, 3)
                             cookies22 = await page.cookies(shopee_full_url)
 
@@ -1298,9 +1327,11 @@ runAllTime = async () => {
 
                             try {
                                 console.log(moment().format("hh:mm:ss") + " --- Lấy thông tin đơn hàng mới tạo: ")
+                                last_request_success = moment();
                                 order_id_list = await shopeeApi.get_all_order_list(shopee_full_url, cookie1, 5, 0)
 
                                 if (order_id_list.length) {
+                                    last_request_success = moment();
                                     order_detail = await shopeeApi.get_order_detail(shopee_full_url, order_id_list[0].shopee_order_id, cookie1)
                                     order_detail.primary_buttons = ""
                                     order_detail.secondary_buttons = ""
@@ -1312,7 +1343,7 @@ runAllTime = async () => {
                                     order_detail.shopee_order_id = order_id_list[0]
                                     order_detail.country = country
                                     order_detail.id = system_order_id
-
+                                    last_request_success = moment();
                                     await api.updateOrder(order_detail, 3)
                                 }
 
@@ -1339,25 +1370,35 @@ runAllTime = async () => {
                 // }
                 //    await sleep(999999);
                 await browser.close();
-                if (os_slave == "LINUX") {
-                    console.log(moment().format("hh:mm:ss") + " PM2 restart ")
-                    shell.exec('pm2 flush');
-                    shell.exec('rm ~/.pm2/pm2.log');
-                    shell.exec('pm2 restart all');
-                }
             }
         } catch (error) {
             console.log(error)
-            shell.exec('pm2 flush');
-            shell.exec('rm ~/.pm2/pm2.log');
-            shell.exec('pm2 restart all');
-
-            return
+        } finally {
+            if (os_slave == "LINUX") {
+                shell.exec('pm2 flush');
+                shell.exec('rm ~/.pm2/pm2.log');
+                shell.exec('pm2 restart all');
+            }
         }
+
     })
 }
 
-
+setInterval(async function () {
+    try {
+        console.log(moment().format('YYYY-MM-DD HH:mm:ss'), "LAST:", last_request_success.format('MM/DD/YYYY HH:mm:ss'));
+        if (moment(last_request_success).add(10, 'minutes') < moment()) {
+            if (os_slave == "LINUX") {
+                shell.exec('pm2 flush');
+                shell.exec('rm ~/.pm2/pm2.log');
+                shell.exec('pm2 restart all');
+            }
+        }
+    }
+    catch (ex) {
+        console.log(moment().format('YYYY-MM-DD HH:mm:ss'), "ERROR:", ex);
+    }
+}, 30000);
 
 //Cron 1 phút 1 lần 
 
