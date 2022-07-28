@@ -70,7 +70,7 @@ add_address = async (page, product, cookies) => {
         await page.waitForTimeout(delay(6000, 4000))
         await page.goto(address_account_url)
         await page.waitForTimeout(delay(6000, 4000))
-        let check_address = await page.$x("//div[contains(text(), 'Full Name')]")
+        let check_address = await page.$x("//button[contains(text(), 'Set as default')]")
 
         console.log("Số địa chỉ đang có: " + check_address.length)
         if (check_address.length) {
@@ -975,13 +975,7 @@ runAllTime = async () => {
                 return false
             }
 
-            // ------------ remove cart ------------------//
-            if (pending_check == 1) {
-                console.log(" ---- pending check ----")
-                await sleep(39999999)
-            }
-
-
+          
             if (checklogin == 1) {
 
                 if (slaveInfo.type == "order_system") {
@@ -1092,10 +1086,7 @@ runAllTime = async () => {
                             return
                         }
 
-                        if (pending_check == 1) {
-                            console.log(" ---- pending check ----")
-                            await sleep(9999999)
-                        }
+                       
 
                         let delete_cart = await actionShopee.remove_cart(page, productForUser)
                         console.log(moment().format("hh:mm:ss") + " --- Xoá giỏ hàng: " + delete_cart)
@@ -1131,6 +1122,11 @@ runAllTime = async () => {
                                 await browser.close()
                                 return
                             }
+                        }
+
+                        if (pending_check == 1) {
+                            console.log(" ---- pending check ----")
+                            await sleep(9999999)
                         }
 
                         await page.on('response', async (response) => {
