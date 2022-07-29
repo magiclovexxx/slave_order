@@ -38,6 +38,21 @@ remove_cart = async (page, product) => {
             }
         }
 
+        check_product_cart = await page.$x("//button[contains(text(), 'Delete')]");
+        if (check_product_cart > 0) {
+            update_error_data = {}
+            update_error_data.order_id = product.id
+            update_error_data.username = product.username
+            update_error_data.slave = product.slave
+            update_error_data.product_link = product.product_link
+            update_error_data.error_message = error.message
+            update_error_data.error_code = 1008
+            update_error_data.error_log = "Lỗi hệ thống khi xoá sản phẩm trong giỏ hàng"
+            await api.update_error(update_error_data, 4)
+            console.log(error)
+            return 0
+        }
+
     } catch (error) {
         update_error_data = {}
         update_error_data.order_id = product.id

@@ -60,7 +60,7 @@ var last_request_success = moment();
 
 add_address = async (page, product, cookies) => {
     try {
-
+        console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ  ---");
         const apiRequestContext = await page.request;
 
         let add_address_url = product.shopee_country_url + "/api/v0/addresses/add/"
@@ -68,9 +68,12 @@ add_address = async (page, product, cookies) => {
         let address_account_url = product.shopee_country_url + "/user/account/address"
 
 
-        await page.waitForTimeout(delay(6000, 4000))
+        await sleep(delay(6000, 4000))
         await page.goto(address_account_url)
-        await page.waitForTimeout(delay(6000, 4000))
+        await sleep(delay(6000, 4000))
+
+        console.log(address_id_list)
+
         let check_address = await page.$x("//button[contains(text(), 'Set as default')]")
 
         console.log("Số địa chỉ đang có: " + check_address.length)
@@ -80,16 +83,31 @@ add_address = async (page, product, cookies) => {
                 let check_address1 = await page.$x('//button[contains(text(), "Delete")]')
 
                 await check_address1[0].click();
-                await page.waitForTimeout(delay(4000, 3000))
+                await page.waitForTimeout(delay(3000, 2000))
                 let check_address2 = await page.$x('//button[contains(text(), "Delete")]')
 
-                if (check_address2.length == 2) {
-                    await check_address2[1].click();
+                if (check_address2.length >= 2) {
+                    await check_address2[check_address2.length-1].click();
                     console.log(moment().format("hh:mm:ss") + " -- Xoá địa chỉ: " + i);
                 }
-                await page.waitForTimeout(delay(4000, 3000))
+                await page.waitForTimeout(delay(3000, 2000))
             }
         }
+
+        check_address = await page.$x("//button[contains(text(), 'Set as default')]")
+        if (check_address.length) {
+            update_error_data = {}
+            update_error_data.order_id = product.id
+            update_error_data.username = product.username
+            update_error_data.slave = product.slave
+            update_error_data.error_code = 1004
+            update_error_data.product_link = product.product_link
+            update_error_data.error_log = "Có lỗi khi xoá địa chỉ"
+            console.log(moment().format("hh:mm:ss") + " -- Có lỗi khi xoá địa chỉ ");
+            await api.update_error(update_error_data, 4)
+            return 0
+        }
+
 
         console.log(moment().format("hh:mm:ss") + " -- Thêm địa chỉ ");
         let domain = product.shopee_country_url.split("/")
@@ -736,6 +754,7 @@ runAllTime = async () => {
     dataShopee = []
     products_name = []
     voucher = []
+    address_id_list = []
 
     let get_data_shopee_url = ""
 
@@ -986,7 +1005,7 @@ runAllTime = async () => {
                 return false
             }
 
-          
+
             if (checklogin == 1) {
 
                 if (slaveInfo.type == "order_system") {
@@ -1105,7 +1124,7 @@ runAllTime = async () => {
                             return
                         }
 
-                       
+
 
                         last_request_success = moment();
                         let delete_cart = await actionShopee.remove_cart(page, productForUser)
@@ -1138,6 +1157,11 @@ runAllTime = async () => {
                             last_request_success = moment();
                             await update_order_status(shopee_country_url, cookie1)
 
+                            if (pending_check == 1) {
+                                console.log(" ---- pending check ----")
+                                await sleep(9999999)
+                            }
+
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
                             // await page.waitForTimeout(999999)
@@ -1145,11 +1169,6 @@ runAllTime = async () => {
                                 await browser.close()
                                 return
                             }
-                        }
-
-                        if (pending_check == 1) {
-                            console.log(" ---- pending check ----")
-                            await sleep(9999999)
                         }
 
                         await page.on('response', async (response) => {
@@ -1175,7 +1194,7 @@ runAllTime = async () => {
                                     }
                                 }
                             } catch (error) {
-
+                                console.log(error)
                             }
                             // check add card
                             let check_add_to_cart = url.split("api/v4/cart/add_to")
@@ -1195,6 +1214,25 @@ runAllTime = async () => {
                                 check_order_complete = true
                                 console.log(moment().format("hh:mm:ss") + " - Kiểm tra đặt hàng: " + check_order_complete)
                             }
+
+
+                            
+                            // let check_address = url.split("account/address/get_user_address_")
+                          
+                            // if (check_address.length > 1) {
+                               
+
+                            //     last_request_success = moment();
+
+                            //     let address_11 = await response.json()
+                            //     if (address_11.data) {
+                            //         let address_22 = address_11.addresses
+                            //         address_22.forEach(e => {
+                            //             address_id_list.push(e.id)
+                            //         })
+                            //     }
+                            //     console.log(moment().format("hh:mm:ss") + " - Danh sách địa chỉ: " + address_id_list.length)
+                            // }
 
                             check_link_san_pham = url.split("item/get?itemid=" + productForUser.product_id)
                             if (check_link_san_pham.length > 1) {
@@ -1302,6 +1340,11 @@ runAllTime = async () => {
                     product_order_info.products_name = products_name
                     product_order_info.voucher = voucher
 
+
+                    if (pending_check == 1) {
+                        console.log(" ---- pending check ----")
+                        await sleep(9999999)
+                    }
 
                     last_request_success = moment();
                     let check_2 = await actionShopee.action_order(page, product_order_info)
