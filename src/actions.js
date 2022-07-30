@@ -1,5 +1,6 @@
 const api = require('./update_to_server.js')
 const moment = require('moment')
+pending_check = process.env.PENDING
 
 delay = (x, y) => {
     a = Math.floor(Math.random() * (x - y)) + y;
@@ -119,18 +120,21 @@ action_add_cart = async (page, product) => {
         //     variation_1 = product_info.color
         // }
 
-        console.log(moment().format("hh:mm:ss") + " -- Phân loại sản phẩm: " + variation);
+        console.log(moment().format("hh:mm:ss") + " -- Phân loại sản phẩm: " + variation + " -- product_model: " + product_models.length);
 
         if (product_models.length) {
             product_models.forEach(e => {
+                console.log(moment().format("hh:mm:ss") + " Phân loại -- " + e.name  + " -- Số lượng: " + e.normal_stock)
 
-                if (e.name == variation && e.normal_stock > 0) {
+                if (e.name === variation && e.normal_stock > 0) {
                     // còn hàng
                     check_variation = 1
-                    console.log(moment().format("hh:mm:ss") + " -- " + variation + " còn sản phẩm ");
+                   
                 }
             })
         }
+
+        console.log(moment().format("hh:mm:ss") + " Phân loại " + variation + " còn sản phẩm: " + check_variation);
 
         if (check_variation == 1) {
             // Chọn màu
@@ -174,6 +178,11 @@ action_add_cart = async (page, product) => {
 
         if (check_btn_add_dard.length > 1) {
             await check_btn_add_dard[0].click();
+        }
+
+        if(pending_check == 1){
+            console.log(" ---- pending check ----")
+            await sleep(9999999)
         }
 
         check_error_add = await page.$x("//div[contains(text(), 'Please select product variation first')]")

@@ -375,7 +375,7 @@ update_order_status = async (url, cookie) => {
 login_google = async (page, accounts, browser, url) => {
     // Click text=Login
     try {
-        login_url = url + "/buyer/login?next=https%3A%2F%2Fshopee.ph%2Flogin"
+        login_url = url + "/buyer/login"
         await page.goto(login_url)
 
         await page.waitForTimeout(delay(6000, 5000))
@@ -528,8 +528,6 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
 
             await sleep(delay(10000, 8000))
 
-            console.log(moment().format("hh:mm:ss") + " - Check Security account")
-
             check_verify_pass = await page.$x("//div[contains(text(), 'Verify by Password')]");
 
             if (check_verify_pass.length) {
@@ -583,12 +581,7 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
                 return 2
             }
 
-        }
-
-        // if(pending_check == 1){
-        //     console.log(" ---- pending check ----")
-        //     await sleep(9999999)
-        // }
+        }        
 
         await sleep(delay(6000, 4000))
         check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
@@ -1199,10 +1192,10 @@ runAllTime = async () => {
                             last_request_success = moment();
                             await update_order_status(shopee_country_url, cookie1)
 
-                            if (pending_check == 1) {
-                                console.log(" ---- pending check ----")
-                                await sleep(9999999)
-                            }
+                            // if (pending_check == 1) {
+                            //     console.log(" ---- pending check ----")
+                            //     await sleep(9999999)
+                            // }
 
 
                             let check_add_address = await add_address(page, productForUser, shopee_cookie)
@@ -1381,12 +1374,6 @@ runAllTime = async () => {
 
                     product_order_info.products_name = products_name
                     product_order_info.voucher = voucher
-
-
-                    if (pending_check == 1) {
-                        console.log(" ---- pending check ----")
-                        await sleep(9999999)
-                    }
 
                     last_request_success = moment();
                     let check_2 = await actionShopee.action_order(page, product_order_info)
