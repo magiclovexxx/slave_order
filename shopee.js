@@ -575,7 +575,7 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
                 update_error_data.order_id = 0
                 update_error_data.username = accounts.username
                 update_error_data.slave = slavenumber
-                update_error_data.error_code = 2007
+                update_error_data.error_code = 2005
                 update_error_data.product_link = ""
                 update_error_data.error_message = "Tài khoản bị khoá"
                 update_error_data.error_log = "Tài khoản bị khoá"
