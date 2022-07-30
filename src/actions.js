@@ -122,52 +122,24 @@ action_add_cart = async (page, product) => {
 
         console.log(moment().format("hh:mm:ss") + " -- Phân loại sản phẩm: " + variation + " -- product_model: " + product_models.length);
 
-        if (product_models.length) {
-            product_models.forEach(e => {
-                console.log(moment().format("hh:mm:ss") + " Phân loại -- " + e.name  + " -- Số lượng: " + e.normal_stock)
-
-                if (e.name === variation && e.normal_stock > 0) {
-                    // còn hàng
-                    check_variation = 1
-                   
-                }
-            })
+        // Chọn variation
+        if (product_info.variation_1) {
+            await page.click('[aria-label="' + product_info.variation_1 + '"]');
+            await sleep(delay(4000, 3000))
+            console.log(moment().format("hh:mm:ss") + " Chọn phân loại 1 :" + product_info.variation_1);
         }
 
-        console.log(moment().format("hh:mm:ss") + " Phân loại " + variation + " còn sản phẩm: " + check_variation);
-
-        if (check_variation == 1) {
-            // Chọn màu
-            if (product_info.variation_1) {
-                await page.click('[aria-label="' + product_info.variation_1 + '"]');
-                await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 1 :" + product_info.variation_1);
-            }
-
-            if (product_info.variation_2) {
-                await page.click('[aria-label="' + product_info.variation_2 + '"]');
-                await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 2: " + product_info.variation_2);
-            }
-
-            if (product_info.variation_3) {
-                await page.click('[aria-label="' + product_info.variation_3 + '"]');
-                await page.waitForTimeout(delay(4000, 3000))
-                console.log(moment().format("hh:mm:ss") + " Chọn phân loại 3: " + product_info.variation_3);
-            }
+        if (product_info.variation_2) {
+            await page.click('[aria-label="' + product_info.variation_2 + '"]');
+            await sleep(delay(4000, 3000))
+            console.log(moment().format("hh:mm:ss") + " Chọn phân loại 2: " + product_info.variation_2);
         }
-        // else {
-        //     console.log(moment().format("hh:mm:ss") + "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng");
-        //     update_error_data = {}
-        //     update_error_data.order_id = product.id
-        //     update_error_data.username = product.username
-        //     update_error_data.slave = product.slave
-        //     update_error_data.error_code = 2002
-        //     update_error_data.product_link = product.product_link
-        //     update_error_data.error_log = "Lỗi khi chọn phân loại hàng, hoặc sản phẩm hết hàng"
-        //     await api.update_error(update_error_data, 4)
-        //     return 0
-        // }
+
+        if (product_info.variation_3) {
+            await page.click('[aria-label="' + product_info.variation_3 + '"]');
+            await sleep(delay(4000, 3000))
+            console.log(moment().format("hh:mm:ss") + " Chọn phân loại 3: " + product_info.variation_3);
+        }
 
         // chọn số lượng
         await page.click('input[role="spinbutton"]', { clickCount: 2 });
@@ -180,22 +152,17 @@ action_add_cart = async (page, product) => {
             await check_btn_add_dard[0].click();
         }
 
-        if(pending_check == 1){
-            console.log(" ---- pending check ----")
-            await sleep(9999999)
-        }
-
         check_error_add = await page.$x("//div[contains(text(), 'Please select product variation first')]")
 
         if (check_error_add.length) {
-            console.log(moment().format("hh:mm:ss") + " Lỗi khi chọn phân loại hàng, sai phân loại, biến thể");
+            console.log(moment().format("hh:mm:ss") + " Lỗi khi chọn phân loại hàng, sai phân loại, hoặc phân loại hết hàng");
             update_error_data = {}
             update_error_data.order_id = product.id
             update_error_data.username = product.username
             update_error_data.slave = product.slave
             update_error_data.error_code = 1014
             update_error_data.product_link = product.product_link
-            update_error_data.error_log = "Lỗi khi chọn phân loại hàng, sai phân loại, biến thể"
+            update_error_data.error_log = "Lỗi khi chọn phân loại hàng, sai phân loại, hoặc phân loại hết hàng"
             await api.update_error(update_error_data, 4)
             return 0
         }
@@ -228,17 +195,25 @@ action_order = async (page, product) => {
         let products_1 = product.products_name
         let voucher_1 = product.voucher
         voucher_2 = ""
-        products_1.forEach(async e => {
-            console.log(e)
-            let check_1 = await page.$$('[title="' + e + '"]');
-            if (check_1.length) {
-                await page.evaluate((a) => {
-                    document.querySelectorAll('[title="' + a + '"]')[1].parentElement.parentElement.parentElement.parentElement.childNodes[0].children[0].click()
-                }, e)
-                await page.waitForTimeout(delay(3000, 1000))
-            }
 
-        })
+        // products_1.forEach(async e => {
+        //     console.log(e)
+        //     let check_1 = await page.$$('[title="' + e + '"]');
+        //     if (check_1.length) {
+        //         await page.evaluate((a) => {
+        //             document.querySelectorAll('[title="' + a + '"]')[1].parentElement.parentElement.parentElement.parentElement.childNodes[0].children[0].click()
+        //         }, e)
+        //         await page.waitForTimeout(delay(3000, 1000))
+        //     }
+
+        // })
+
+        let check_product = await page.$$('.stardust-checkbox__input')
+        await check_product[1].click()
+        // if (pending_check == 1) {
+        //     console.log(" ---- pending check ----")
+        //     await sleep(9999999)
+        // }
 
         update_error_data = {}
         update_error_data.order_id = product.id
