@@ -87,7 +87,7 @@ add_address = async (page, product, cookies) => {
                 let check_address2 = await page.$x('//button[contains(text(), "Delete")]')
 
                 if (check_address2.length >= 2) {
-                    await check_address2[check_address2.length-1].click();
+                    await check_address2[check_address2.length - 1].click();
                     console.log(moment().format("hh:mm:ss") + " -- Xoá địa chỉ: " + i);
                 }
                 await page.waitForTimeout(delay(3000, 2000))
@@ -149,6 +149,27 @@ add_address = async (page, product, cookies) => {
             zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
             phone_country = "63"
         }
+
+        if (address_data.country == "MY") {
+            //    zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
+            phone_country = "60"
+        }
+
+        if (address_data.country == "VN") {
+            //    zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
+            phone_country = "84"
+        }
+
+        if (address_data.country == "TH") {
+            //    zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
+            phone_country = "66"
+        }
+
+        if (address_data.country == "ID") {
+            //    zipcode = Math.floor(Math.random() * (3900 - 3000)) + 3000;
+            phone_country = "62"
+        }
+
         let rec_phone = parseInt(product.rec_phone);
 
         let ph = phone_country + rec_phone
@@ -362,7 +383,8 @@ login_google = async (page, accounts, browser, url) => {
         await page.waitForSelector('.social-white-google-png')
         await page.click('.social-white-google-png')
 
-        await page.waitForTimeout(delay(11000, 9000))
+        await page.waitForTimeout(delay(10000, 8000))
+
 
         let page1 = (await browser.pages())[1];
         await page1.waitForTimeout(delay(4000, 3000))
@@ -375,17 +397,15 @@ login_google = async (page, accounts, browser, url) => {
         await page1.waitForTimeout(delay(6000, 4000))
         await page1.waitForSelector('[autocomplete="current-password"]')
         await page1.type('[autocomplete="current-password"]', accounts.gmail_password, { delay: 100 })    // Nhập comment 
-        await sleep(delay(3000, 2000))
+        await sleep(delay(3000, 2000))                
+        
         let click_next = await page1.$$('[data-is-touch-wrapper="true"]')
         if (click_next.length > 0) {
             await click_next[1].click()
             await sleep(delay(5000, 4000))
         }
 
-        //    
-
-        console.log("-- check email khoi phuc --")
-
+        
         let check_gmail_khoi_phuc = await page1.$x("//div[contains(text(), 'Xác nhận email khôi phục của bạn')]");
         if (check_gmail_khoi_phuc.length) {
             console.log("-- Nhap email khoi phuc --")
@@ -404,8 +424,6 @@ login_google = async (page, accounts, browser, url) => {
                 await sleep(delay(3000, 2000))
             }
         }
-
-
 
         let check_gmail_block = await page1.$x("//span[contains(text(), 'Tài khoản của bạn đã bị vô hiệu hoá')]");
 
@@ -531,7 +549,9 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
 
             check_verify = await page.$x("//div[contains(text(), 'Security check')]");
 
-            if (check_verify.length) {
+           
+
+            if (check_verify.length ) {
                 console.log("Tài khoản bị check point : " + accounts.username)
 
                 update_error_data = {}
@@ -546,7 +566,29 @@ login_shopee = async (page, accounts, url, browser, login_type) => {
                 return 2
             }
 
+            check_verify_2 = await page.$x("//div[contains(text(), 'Your account has been banned')]");
+
+            if (check_verify_2.length ) {
+                console.log("Tài khoản bị banner : " + accounts.username)
+
+                update_error_data = {}
+                update_error_data.order_id = 0
+                update_error_data.username = accounts.username
+                update_error_data.slave = slavenumber
+                update_error_data.error_code = 2007
+                update_error_data.product_link = ""
+                update_error_data.error_message = "Tài khoản bị khoá"
+                update_error_data.error_log = "Tài khoản bị khoá"
+                await api.update_error(update_error_data, 4)
+                return 2
+            }
+
         }
+
+        // if(pending_check == 1){
+        //     console.log(" ---- pending check ----")
+        //     await sleep(9999999)
+        // }
 
         await sleep(delay(6000, 4000))
         check_login = await page.$$('.navbar__link.navbar__link--account.navbar__link--login')
@@ -1216,11 +1258,11 @@ runAllTime = async () => {
                             }
 
 
-                            
+
                             // let check_address = url.split("account/address/get_user_address_")
-                          
+
                             // if (check_address.length > 1) {
-                               
+
 
                             //     last_request_success = moment();
 
