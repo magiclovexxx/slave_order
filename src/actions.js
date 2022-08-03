@@ -420,9 +420,11 @@ action_order = async (page, product) => {
 
             let check_account_suppen = await page.$x("//p[contains(text(), 'Action Failed (A02): Your account has been suspended as our system detected a suspicious behaviour of mass creation of accounts. Please make sure to comply with Shopee policies.')]")
 
+            let check_2 = await page.$x("//p[contains(text(), 'Your checkout attempt has been rejected due to unusual activities in your account')]")
+
             let check_account_limit = await page.$x("//div[contains(text(), 'Sorry, you have reached the Cash on Delivery order limit.')]")
 
-            if (check_account_suppen.length || check_account_limit.length) {
+            if (check_account_suppen.length || check_account_limit.length || check_2.length) {
 
                 if (check_account_limit.length) {
                     update_error_data.error_code = 2006
@@ -431,7 +433,7 @@ action_order = async (page, product) => {
 
                 }
 
-                if (check_account_suppen.length) {
+                if (check_account_suppen.length || check_2.length) {
                     update_error_data.error_code = 2005
                     update_error_data.error_log = "Tài khoản bị khoá"
                     console.log(moment().format("hh:mm:ss") + " -- Tài khoản bị khoá: " + product.username);

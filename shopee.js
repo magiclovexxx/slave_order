@@ -141,8 +141,8 @@ add_address = async (page, product, cookies) => {
         data.append('address', address_data.address);
 
         if (address_data.zipcode) {
-            let z = address_data.zipcode
-            data.append('zipcode', z);
+            zipcode = address_data.zipcode
+          //  data.append('zipcode', z);
         }
 
         if (address_data.country == "PH") {
@@ -1045,7 +1045,6 @@ runAllTime = async () => {
 
                 if (slaveInfo.type == "order_system") {
 
-
                     if (orders.length) {
                         if (mode == "DEV") {
                             //   max_turn = 1
@@ -1104,7 +1103,7 @@ runAllTime = async () => {
                     }
 
                     let order_1 = orders[0]
-                    console.log("ORDER id: " + order_1.id)                 
+                    console.log("ORDER id: " + order_1.id)
 
                     let shopee_country_url = shopee_full_url
 
@@ -1132,6 +1131,8 @@ runAllTime = async () => {
                     }
 
                     let check_add_cart
+                    let check_order_1
+                    let order_detail_1
 
                     try {
                         last_request_success = moment();
@@ -1167,8 +1168,6 @@ runAllTime = async () => {
 
                     console.log("country shopee link: " + shopee_country_url)
 
-
-                    let cookie1
                     let shopee_cookie = await page.cookies(shopee_country_url)
                     cookie1 = cookie_to_string(shopee_cookie)
 
@@ -1192,6 +1191,8 @@ runAllTime = async () => {
                         await browser.close()
                         return
                     }
+
+                    
 
                     await page.on('response', async (response) => {
                         let url = response.url()
@@ -1230,8 +1231,19 @@ runAllTime = async () => {
                             console.log(moment().format("hh:mm:ss") + " - Kiểm tra bỏ giỏ: " + check_add_cart)
                         }
 
+
+                        let check_order_detai = url.split("api/v4/order/get_checkout_detail")
+                        if (check_order_detai.length > 1) {
+                            last_request_success = moment();
+                            order_detail_1 = await response.json()
+                          
+                            console.log(moment().format("hh:mm:ss") + " - Kiểm tra bỏ giỏ: " + check_add_cart)
+                        }
+
                         let check_order = url.split("api/v4/checkout/place_or")
                         if (check_order.length > 1) {
+                            check_order_1 = await response.json()
+
                             last_request_success = moment();
                             check_order_complete = true
                             console.log(moment().format("hh:mm:ss") + " - Kiểm tra đặt hàng: " + check_order_complete)
@@ -1285,7 +1297,7 @@ runAllTime = async () => {
                         order_1 = orders[o]
                         productForUser = order_1
                         list_order_id.push(order_1.id)
-                     
+
                         try {
                             last_request_success = moment();
                             await page.goto(order_1.product_link, {
@@ -1300,7 +1312,7 @@ runAllTime = async () => {
 
                         if (check_product_exit === "Có tồn tại") {
                             try {
-                              
+
                                 console.log("Local IP: " + productForUser.local_ip);
                                 console.log("Ip mới: " + proxy.proxy_ip)
                                 console.log("Shop id: " + productForUser.shop_id)
@@ -1309,7 +1321,7 @@ runAllTime = async () => {
                                 console.log("product id: " + productForUser.product_id)
                                 console.log("ORDER id: " + productForUser.id)
                                 system_order_id = productForUser.id
-                                products_name.push(productForUser.product_name)                               
+                                products_name.push(productForUser.product_name)
 
                                 cookies22 = await page.cookies(shopee_country_url)
 
@@ -1364,13 +1376,6 @@ runAllTime = async () => {
 
                     console.log(list_order_id)
 
-
-                    // if (pending_check == 1) {
-                    //     console.log(" ---- pending check ----")
-                    //     await sleep(9999999)
-                    // }
-
-
                     product_order_info.products_name = products_name
                     product_order_info.voucher = voucher
 
@@ -1379,10 +1384,16 @@ runAllTime = async () => {
                     product_order_info.action = "order_product"
 
                     await sleep(delay(6000, 4000));
+                    console.log(check_order_1)
                     console.log(moment().format("hh:mm:ss") + " - Quá trình đặt đơn: " + check_2.code)
                     //await page.waitForTimeout(999999);
 
-                    if (check_2.code == 1) {
+                    // if (pending_check == 1) {
+                    //     console.log(" ---- pending check ----")
+                    //     await sleep(9999999)
+                    // }
+
+                    if (check_2.code == 1 && !check_order_1.error ) {
                         console.log("ORDER RESULT: " + check_order_complete)
                         if (check_order_complete == true) {
                             //    await sleep(delay(6000, 5000))
@@ -1399,25 +1410,34 @@ runAllTime = async () => {
                             cookie1 = cookie_to_string(cookies22)
 
                             try {
-                                console.log(moment().format("hh:mm:ss") + " --- Lấy thông tin đơn hàng mới tạo: ")
+                               
                                 last_request_success = moment();
-                                order_id_list = await shopeeApi.get_all_order_list(shopee_full_url, cookie1, 5, 0)
+                                // order_id_list = await shopeeApi.get_all_order_list(shopee_full_url, cookie1, 5, 0)
 
-                                if (order_id_list.length) {
+                                if (check_order_1.orderids) {
+                                    console.log(moment().format("hh:mm:ss") + " --- Lấy thông tin đơn hàng mới tạo: ")
                                     last_request_success = moment();
-                                    order_detail = await shopeeApi.get_order_detail(shopee_full_url, order_id_list[0].shopee_order_id, cookie1)
-                                    order_detail.primary_buttons = ""
-                                    order_detail.secondary_buttons = ""
-                                    order_detail.notification_bar = ""
-                                    order_detail.guarantee = ""
-                                    order_detail.ereceipt = ""
-                                    order_detail.coins = ""
-                                    order_detail.components = ""
-                                    order_detail.shopee_order_id = order_id_list[0]
-                                    order_detail.country = country
-                                    order_detail.id = system_order_id
+                                    url_get_order_detail = shopee_full_url + "/api/v4/order/get_order_detail?order_id=" + check_order_1.orderids
+                                   
+                                    await page.goto(url_get_order_detail)
+
+                                    await sleep(1000)
+
+                                    console.log(order_detail_1)
+
+                                //    order_detail = await shopeeApi.get_order_detail(shopee_full_url, check_order_1.orderids, cookie1)
+                                    order_detail_1.primary_buttons = ""
+                                    order_detail_1.secondary_buttons = ""
+                                    order_detail_1.notification_bar = ""
+                                    order_detail_1.guarantee = ""
+                                    order_detail_1.ereceipt = ""
+                                    order_detail_1.coins = ""
+                                    order_detail_1.components = ""
+                                    order_detail_1.shopee_order_id = check_order_1.orderids
+                                    order_detail_1.country = country
+                                    order_detail_1.id = system_order_id
                                     last_request_success = moment();
-                                    await api.updateOrder(order_detail, 3)
+                                    await api.updateOrder(order_detail_1, 3)
                                 }
 
                             } catch (error) {
@@ -1426,6 +1446,7 @@ runAllTime = async () => {
                             }
 
                         } else {
+                        //    console.log(moment().format("hh:mm:ss") + " --- Có lỗi khi Lấy thông tin đơn hàng mới tạo: ")
                             product_order_info.result = "fail"
                         }
 
@@ -1437,10 +1458,10 @@ runAllTime = async () => {
                     await api.updateHistory(product_order_info, 3)
                     console.log(moment().format("hh:mm:ss") + " -  ----------- Kết thúc tương tác Tab: " + index)
                 }
-                // if (pending_check == 1) {
-                //     console.log(" ---- pending check ----")
-                //     await sleep(9999999)
-                // }
+                if (pending_check == 1) {
+                    console.log(" ---- pending check ----")
+                    await sleep(9999999)
+                }
                 //    await sleep(999999);
                 await browser.close();
             }

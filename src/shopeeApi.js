@@ -38,7 +38,7 @@ get_order_detail = async (url, order_id, cookie) => {
     order_detail = []
     await axios(config)
         .then(function (response) {
-         //   console.log(response.data.data)
+            console.log(response.data.data)
           //  process.exit()
             if (response.data.data) {
                 order_detail = response.data.data

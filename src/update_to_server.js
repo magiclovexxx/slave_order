@@ -136,6 +136,7 @@ updateOrder = async (product9, limit) => {
                 await sleep(5000)
                 //  await updateOrder(product9, limit)
             } else {
+                
                 console.log(moment().format("hh:mm:ss") + " - Lỗi mạng không thể cập nhật dữ liệu");
                 return false
             }
