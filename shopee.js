@@ -142,7 +142,7 @@ add_address = async (page, product, cookies) => {
 
         if (address_data.zipcode) {
             zipcode = address_data.zipcode
-          //  data.append('zipcode', z);
+            //  data.append('zipcode', z);
         }
 
         if (address_data.country == "PH") {
@@ -217,6 +217,11 @@ add_address = async (page, product, cookies) => {
             .catch(function (error) {
                 console.log(error);
             })
+
+        // if (pending_check == 1) {
+        //     console.log(" ---- pending check ----")
+        //     await sleep(9999999)
+        // }
 
 
         if (body.addressid) {
@@ -1192,7 +1197,7 @@ runAllTime = async () => {
                         return
                     }
 
-                    
+
 
                     await page.on('response', async (response) => {
                         let url = response.url()
@@ -1236,7 +1241,7 @@ runAllTime = async () => {
                         if (check_order_detai.length > 1) {
                             last_request_success = moment();
                             order_detail_1 = await response.json()
-                          
+
                             console.log(moment().format("hh:mm:ss") + " - Kiểm tra bỏ giỏ: " + check_add_cart)
                         }
 
@@ -1393,7 +1398,7 @@ runAllTime = async () => {
                     //     await sleep(9999999)
                     // }
 
-                    if (check_2.code == 1 && !check_order_1.error ) {
+                    if (check_2.code == 1 && !check_order_1.error) {
                         console.log("ORDER RESULT: " + check_order_complete)
                         if (check_order_complete == true) {
                             //    await sleep(delay(6000, 5000))
@@ -1410,33 +1415,50 @@ runAllTime = async () => {
                             cookie1 = cookie_to_string(cookies22)
 
                             try {
-                               
+
                                 last_request_success = moment();
                                 // order_id_list = await shopeeApi.get_all_order_list(shopee_full_url, cookie1, 5, 0)
 
                                 if (check_order_1.orderids) {
                                     console.log(moment().format("hh:mm:ss") + " --- Lấy thông tin đơn hàng mới tạo: ")
                                     last_request_success = moment();
-                                    url_get_order_detail = shopee_full_url + "/api/v4/order/get_order_detail?order_id=" + check_order_1.orderids
-                                   
+                                    // if (country == "PH") {
+                                    //     url_get_order_detail = shopee_full_url + "/api/v4/order/get_checkout_detail?checkout_id=" + check_order_1.checkoutid
+
+                                    // } else {
+                                    //     url_get_order_detail = shopee_full_url + "/api/v4/order/get_order_detail?order_id=" + check_order_1.orderids
+
+                                    // }
+
+                                    url_get_order_detail = shopee_full_url + "/api/v4/order/get_checkout_detail?checkout_id=" + check_order_1.checkoutid
+
+
                                     await page.goto(url_get_order_detail)
 
                                     await sleep(1000)
+                                    order_detail_1 = order_detail_1.data
+                                    if(order_detail_1.info_card){
+                                        console.log(moment().format("hh:mm:ss") + " --- Shopee order id: ")
+                                        console.log(order_detail_1.info_card.checkout_order_cards[0].processing_info.order_sn)
+                                    }
+                                    
 
-                                    console.log(order_detail_1)
+                                    //    order_detail = await shopeeApi.get_order_detail(shopee_full_url, check_order_1.orderids, cookie1)
+                                    if (order_detail_1) {
+                                        order_detail_1.primary_buttons = ""
+                                        order_detail_1.secondary_buttons = ""
+                                        order_detail_1.notification_bar = ""
+                                        order_detail_1.guarantee = ""
+                                        order_detail_1.ereceipt = ""
+                                        order_detail_1.coins = ""
+                                        order_detail_1.components = ""
 
-                                //    order_detail = await shopeeApi.get_order_detail(shopee_full_url, check_order_1.orderids, cookie1)
-                                    order_detail_1.primary_buttons = ""
-                                    order_detail_1.secondary_buttons = ""
-                                    order_detail_1.notification_bar = ""
-                                    order_detail_1.guarantee = ""
-                                    order_detail_1.ereceipt = ""
-                                    order_detail_1.coins = ""
-                                    order_detail_1.components = ""
-                                    order_detail_1.shopee_order_id = check_order_1.orderids
+                                    }
+                                    order_detail_1.shopee_order_id = check_order_1.checkoutid
                                     order_detail_1.country = country
                                     order_detail_1.id = system_order_id
                                     last_request_success = moment();
+
                                     await api.updateOrder(order_detail_1, 3)
                                 }
 
@@ -1446,7 +1468,7 @@ runAllTime = async () => {
                             }
 
                         } else {
-                        //    console.log(moment().format("hh:mm:ss") + " --- Có lỗi khi Lấy thông tin đơn hàng mới tạo: ")
+                            //    console.log(moment().format("hh:mm:ss") + " --- Có lỗi khi Lấy thông tin đơn hàng mới tạo: ")
                             product_order_info.result = "fail"
                         }
 

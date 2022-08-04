@@ -1,0 +1,217 @@
+{
+    "data": {
+        "status": {
+            "status_label": {
+                "text": "label_pending_payment",
+                "tl": false
+            },
+            "header_text": {
+                "text": "order_status_text_to_pay_cod",
+                "tl": false
+            },
+            "header_image": "https://deo.shopeemobile.com/shopee/shopee-orderprocessing-live-ph/to_pay.png",
+            "list_view_status_label": {
+                "text": "label_to_pay",
+                "tl": false
+            }
+        },
+        "address": {
+            "shipping_name": "Marcus Noe P. Culala",
+            "shipping_phone": "639922663872",
+            "shipping_address": "003, #08 Green Fields, Sindalan, San Fernando City, North Luzon, Pampanga, 3218",
+            "is_buyer_address_editable": false
+        },
+        "info_card": {
+            "checkout_order_cards": [
+                {
+                    "order_id": 113309449206050,
+                    "processing_info": {
+                        "order_sn": "2208049069RA92",
+                        "info_rows": [
+                            {
+                                "info_label": {
+                                    "text": "label_odp_order_time",
+                                    "tl": false
+                                },
+                                "info_value": {
+                                    "value": "1659610250",
+                                    "type": 8
+                                }
+                            }
+                        ]
+                    },
+                    "shop_info": {
+                        "shop_id": 827151865,
+                        "shop_name": "bazzus.ph",
+                        "user_id": 827133340,
+                        "username": "bazzus.ph",
+                        "portrait": "",
+                        "shop_tag": 0
+                    },
+                    "product_info": {
+                        "item_groups": [
+                            {
+                                "items": [
+                                    {
+                                        "item_id": 19430253718,
+                                        "model_id": 191561532829,
+                                        "shop_id": 827151865,
+                                        "name": "\"You Are My Sunshine\" Necklace",
+                                        "model_name": "Buy 1",
+                                        "image": "0d30de0f5aa5012960978c1c1dc7a9af",
+                                        "amount": 1,
+                                        "ext_info": {
+                                            "add_on_deal_id": 0,
+                                            "is_add_on_sub_item": false,
+                                            "free_return_day": 0,
+                                            "is_wholesale": false,
+                                            "is_pre_order": false
+                                        },
+                                        "status": 1,
+                                        "item_price": 45900000,
+                                        "order_price": 45900000,
+                                        "snapshot_id": 3737085645
+                                    }
+                                ],
+                                "num_items": 1
+                            }
+                        ],
+                        "total_num_items": 1
+                    },
+                    "payment_info": {
+                        "currency": "PHP",
+                        "total_price": 51900000,
+                        "info_rows": [
+                            {
+                                "info_label": {
+                                    "text": "label_odp_merchandise_subtotal",
+                                    "tl": false
+                                },
+                                "info_value": {
+                                    "value": "45900000",
+                                    "type": 5
+                                }
+                            },
+                            {
+                                "info_label": {
+                                    "text": "label_odp_shipping",
+                                    "tl": false,
+                                    "attributes": [
+                                        {
+                                            "name": "shipping_carrier",
+                                            "type": 1,
+                                            "label": {
+                                                "text": "Standard International",
+                                                "tl": false
+                                            }
+                                        }
+                                    ]
+                                },
+                                "info_value": {
+                                    "value": "6000000",
+                                    "type": 5
+                                }
+                            }
+                        ]
+                    },
+                    "ereceipt": {},
+                    "vat_amount": 0
+                }
+            ],
+            "subtotal": 51900000
+        },
+        "payment_method": {
+            "payment_method": 6,
+            "payment_channel_name": {
+                "text": "Cash on Delivery",
+                "tl": true
+            },
+            "can_change_payment_method": false
+        },
+        "secondary_buttons": [
+            {
+                "id": 15
+            },
+            {
+                "id": 19,
+                "extra": {
+                    "cancel_info": {
+                        "title": {
+                            "text": "odp_cancel_checkout_title",
+                            "tl": false
+                        },
+                        "msg": {
+                            "text": "odp_cancel_checkout_msg",
+                            "tl": false
+                        },
+                        "reasons": [
+                            {
+                                "id": 501,
+                                "label": {
+                                    "text": "label_buyer_cancel_order_reason_501",
+                                    "tl": false
+                                }
+                            },
+                            {
+                                "id": 502,
+                                "label": {
+                                    "text": "label_buyer_cancel_order_reason_502",
+                                    "tl": false
+                                }
+                            },
+                            {
+                                "id": 503,
+                                "label": {
+                                    "text": "label_buyer_cancel_order_reason_503",
+                                    "tl": false
+                                }
+                            },
+                            {
+                                "id": 504,
+                                "label": {
+                                    "text": "label_buyer_cancel_order_reason_504",
+                                    "tl": false
+                                }
+                            },
+                            {
+                                "id": 505,
+                                "label": {
+                                    "text": "label_buyer_cancel_order_reason_505",
+                                    "tl": false
+                                }
+                            },
+                            {
+                                "id": 506,
+                                "label": {
+                                    "text": "label_buyer_cancel_order_reason_506",
+                                    "tl": false
+                                }
+                            },
+                            {
+                                "id": 507,
+                                "label": {
+                                    "text": "label_buyer_cancel_order_reason_507",
+                                    "tl": false
+                                }
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        "primary_buttons": [
+            {
+                "id": 0
+            }
+        ],
+        "components": [
+            12,
+            0,
+            2,
+            6,
+            4,
+            9,
+            10
+        ]
+    }
+}
